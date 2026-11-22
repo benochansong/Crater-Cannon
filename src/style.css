@@ -1292,3 +1292,9 @@ h2 {
   top: auto;
   bottom: 7%;
 }
+/* Keep the complete battlefield and firing panel inside a standard PC viewport. */
+@media (min-width: 741px) {
+  .app {
+    max-width: min(1600px, calc((100dvh - 320px) * 2 + 7vw));
+  }
+}

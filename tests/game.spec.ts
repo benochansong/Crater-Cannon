@@ -202,3 +202,20 @@ test("high arcs stay visible, settings pause a flying projectile, effects expire
   expect(settled.visuals.flashes).toBe(0);
   expect(settled.visuals.labels).toBe(0);
 });
+test("16:9 desktop keeps the fire controls in the first screen", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "게임 시작" }).click();
+  const fire = page.getByRole("button", { name: /발사!/ });
+  await expect(fire).toBeVisible();
+  const box = await fire.boundingBox();
+  expect(box!.y + box!.height).toBeLessThanOrEqual(768);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({ path: "test-results/desktop-1366.png" });
+});
