@@ -7,8 +7,9 @@ import {
   launch,
   STEP,
   advance,
+  advanceMissile,
 } from "./engine";
-import type { GameEvent, Tank, WeaponId } from "./engine";
+import type { Drone, GameEvent, Tank, WeaponId } from "./engine";
 interface Particle {
   x: number;
   y: number;
@@ -40,6 +41,7 @@ export class Renderer {
   bursts: Burst[] = [];
   labels: Label[] = [];
   camera = new Camera();
+  pulses: { x: number; y: number; age: number }[] = [];
   flashes: { x: number; y: number; angle: number; age: number }[] = [];
   private hitStop = 0;
   time = 0;
@@ -58,6 +60,43 @@ export class Renderer {
     return dt - held;
   }
   event(e: GameEvent) {
+    if (e.type === "emp") {
+      this.pulses.push({ x: e.x, y: e.y, age: 0 });
+      for (let i = 0; i < 36; i++) {
+        const a = (i / 36) * Math.PI * 2;
+        this.particle(
+          e.x,
+          e.y,
+          Math.cos(a) * 240,
+          Math.sin(a) * 240,
+          "#a0f5ff",
+          3,
+          0.7,
+          false,
+        );
+      }
+    }
+    if (e.type === "disabled") {
+      this.labels.push({
+        x: e.x,
+        y: e.y - 30,
+        age: 0,
+        text: e.weapon === "drone" ? "DRONE OFF" : "추적 해제",
+        direct: false,
+        color: "#b6f4f4",
+      });
+      for (let i = 0; i < 15; i++)
+        this.particle(
+          e.x,
+          e.y,
+          (Math.random() - 0.5) * 90,
+          -Math.random() * 100,
+          "#88cbd1",
+          3,
+          0.7,
+          false,
+        );
+    }
     if (e.type === "shot") {
       this.flashes.push({
         x: e.x,
@@ -180,11 +219,31 @@ export class Renderer {
         Math.sin(this.time * 110) * this.shake,
         Math.cos(this.time * 93) * this.shake * 0.6,
       );
-    this.camera.update(game.projectile, dt, options.menu);
+    this.camera.update(game.projectile ?? game.drone, dt, options.menu);
     ctx.translate(this.camera.x, this.camera.y);
     ctx.scale(this.camera.scale, this.camera.scale);
     this.terrain(ctx, game);
-    if (game.phase === "aim" && !options.menu) this.guide(ctx, game);
+    if (game.phase === "aim" && !options.menu && game.weapon !== "drone")
+      this.guide(ctx, game);
+    if (game.drone) this.drawDrone(ctx, game.drone);
+    if (!options.menu && game.weapon === "missile" && game.phase === "aim") {
+      const t = game.ai;
+      ctx.strokeStyle = game.target ? "#ee7246" : "#fff1ba";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([9, 5]);
+      ctx.beginPath();
+      ctx.arc(t.x, t.y - 8, 43, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#24433d";
+      ctx.font = "bold 15px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        game.target ? "TARGET LOCK" : "클릭하여 목표 지정",
+        t.x,
+        t.y - 62,
+      );
+    }
     for (const t of game.tanks)
       this.tank(
         ctx,
@@ -216,6 +275,38 @@ export class Renderer {
       ctx.arc(p.x, p.y, 5.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
+      if (p.weapon === "missile") {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(Math.atan2(p.vy, p.vx));
+        ctx.fillStyle = p.guided ? "#ffad43" : "#8b9e9a";
+        ctx.beginPath();
+        ctx.moveTo(-15, -5);
+        ctx.lineTo(-34 - Math.sin(this.time * 80) * 7, 0);
+        ctx.lineTo(-15, 5);
+        ctx.fill();
+        ctx.fillStyle = "#f3f3d8";
+        ctx.strokeStyle = "#35504a";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(19, 0);
+        ctx.lineTo(5, -6);
+        ctx.lineTo(-16, -6);
+        ctx.lineTo(-16, 6);
+        ctx.lineTo(5, 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = p.guided ? "#ed7a50" : "#7a9a9a";
+        ctx.fillRect(1, -6, 5, 12);
+        ctx.beginPath();
+        ctx.moveTo(-8, -5);
+        ctx.lineTo(-18, -14);
+        ctx.lineTo(-18, 14);
+        ctx.lineTo(-8, 5);
+        ctx.fill();
+        ctx.restore();
+      }
       if (this.camera.toScreen(p).y < 15) {
         ctx.fillStyle = "#173d45";
         ctx.font = "bold 15px sans-serif";
@@ -230,6 +321,55 @@ export class Renderer {
     this.effects(ctx, dt);
     ctx.restore();
     ctx.globalAlpha = 1;
+  }
+  private drawDrone(ctx: CanvasRenderingContext2D, d: Drone) {
+    for (let i = 0; i < d.trail.length; i += 4) {
+      const t = d.trail[i];
+      ctx.globalAlpha = (i / d.trail.length) * 0.3;
+      ctx.fillStyle = "#a2e8ba";
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, 4, 0, 7);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    ctx.rotate(Math.max(-0.28, Math.min(0.28, d.vx / 800)));
+    ctx.strokeStyle = "#28483f";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(-28, -7);
+    ctx.lineTo(28, 7);
+    ctx.moveTo(-28, 7);
+    ctx.lineTo(28, -7);
+    ctx.stroke();
+    for (const x of [-27, 27]) {
+      ctx.fillStyle = "#e0f2c7";
+      ctx.beginPath();
+      ctx.ellipse(x, -7, 14, 3 + Math.sin(this.time * 100) * 1.5, 0, 0, 7);
+      ctx.fill();
+      ctx.strokeStyle = "#335e4e";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    ctx.fillStyle = d.owner === "player" ? "#51a69a" : "#c46b5f";
+    ctx.strokeStyle = "#28483f";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-15, -13, 30, 23, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#d9ffb8";
+    ctx.fillRect(-7, -10, 14, 4);
+    ctx.fillStyle = "#193d3d";
+    ctx.beginPath();
+    ctx.arc(0, 9, 7, 0, 7);
+    ctx.fill();
+    ctx.fillStyle = "#fff1a2";
+    ctx.beginPath();
+    ctx.arc(0, 9, 3, 0, 7);
+    ctx.fill();
+    ctx.restore();
   }
   private sky(ctx: CanvasRenderingContext2D) {
     const grad = ctx.createLinearGradient(0, 0, 0, HEIGHT);
@@ -552,9 +692,18 @@ export class Renderer {
   }
   private guide(ctx: CanvasRenderingContext2D, game: Battle) {
     const p = launch(game.player, game.weapon);
+    if (p.weapon === "missile") {
+      p.guided = true;
+      p.target = "ai";
+    }
     ctx.fillStyle = "#fffadd";
     for (let i = 0; i < 75; i++) {
-      if (advance(p, game.terrain, game.tanks, game.wind, STEP)) break;
+      if (
+        p.weapon === "missile"
+          ? advanceMissile(p, game.terrain, game.tanks, game.wind, STEP)
+          : advance(p, game.terrain, game.tanks, game.wind, STEP)
+      )
+        break;
       if (i % 10 === 0) {
         ctx.globalAlpha = 0.9 - i / 100;
         ctx.beginPath();
@@ -565,6 +714,24 @@ export class Renderer {
     ctx.globalAlpha = 1;
   }
   private effects(ctx: CanvasRenderingContext2D, dt: number) {
+    for (const pulse of this.pulses) {
+      pulse.age += dt;
+      const t = pulse.age / 0.85;
+      ctx.globalAlpha = Math.max(0, 1 - t);
+      ctx.strokeStyle = "#81efff";
+      ctx.lineWidth = 6 * (1 - t);
+      ctx.fillStyle = "#9af5ff22";
+      ctx.beginPath();
+      ctx.arc(pulse.x, pulse.y, 25 + t * 280, 0, 7);
+      ctx.fill();
+      ctx.stroke();
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(pulse.x, pulse.y, 15 + t * 220, 0, 7);
+      ctx.stroke();
+    }
+    this.pulses = this.pulses.filter((p) => p.age < 0.85);
+    ctx.globalAlpha = 1;
     for (const flash of this.flashes) {
       flash.age += dt;
       const k = Math.max(0, 1 - flash.age / 0.15);

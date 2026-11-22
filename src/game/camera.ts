@@ -5,7 +5,11 @@ export class Camera {
   scale = 1;
   x = 0;
   y = 0;
-  update(projectile: Projectile | null, dt: number, menu: boolean) {
+  update(
+    projectile: Pick<Projectile, "x" | "y" | "vy"> | null,
+    dt: number,
+    menu: boolean,
+  ) {
     const futureY = projectile
       ? Math.min(
           projectile.y,

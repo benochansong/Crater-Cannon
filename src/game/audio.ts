@@ -1,4 +1,4 @@
-import type { GameEvent, Projectile } from "./engine";
+import type { Drone, GameEvent, Projectile } from "./engine";
 export class Sound {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -94,7 +94,19 @@ export class Sound {
   }
   event(e: GameEvent) {
     try {
-      if (e.type === "shot") {
+      if (e.type === "emp") {
+        this.noise(0.35, 3500, 0.35);
+        this.tone(1100, 120, 0.45, "sine", 0, 0.4);
+        this.tone(220, 880, 0.2, "triangle", 0.15, 0.15);
+      }
+      if (e.type === "threat") {
+        this.tone(700, 700, 0.12, "triangle", 0, 0.25);
+        this.tone(950, 950, 0.12, "triangle", 0.2, 0.25);
+      }
+      if (e.type === "disabled") this.tone(380, 45, 0.4, "sawtooth", 0, 0.12);
+      if (e.type === "shot" && e.weapon === "drone")
+        this.tone(70, 150, 0.5, "triangle", 0, 0.2);
+      if (e.type === "shot" && e.weapon !== "drone") {
         this.noise(0.16, 2400, 0.75);
         this.tone(190, 38, 0.23, "triangle", 0, 0.7);
         this.tone(70, 30, 0.25, "sine", 0, 0.8);
@@ -131,7 +143,7 @@ export class Sound {
       /* Browser audio failures never interrupt a match. */
     }
   }
-  flight(projectile: Projectile | null) {
+  flight(projectile: Projectile | Drone | null) {
     try {
       if (!projectile || !this.context || !this.master) {
         if (this.flying) {
@@ -155,8 +167,13 @@ export class Sound {
         source.start();
         this.flying = { source, gain, pan };
       }
+      const isDrone = !("weapon" in projectile);
+      this.flying.source.type = isDrone ? "triangle" : "sine";
       this.flying.source.frequency.setTargetAtTime(
-        260 + Math.min(500, Math.hypot(projectile.vx, projectile.vy) * 0.65),
+        isDrone
+          ? 95 + Math.hypot(projectile.vx, projectile.vy) * 0.2
+          : 260 +
+              Math.min(500, Math.hypot(projectile.vx, projectile.vy) * 0.65),
         this.context.currentTime,
         0.08,
       );

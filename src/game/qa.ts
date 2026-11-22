@@ -5,7 +5,20 @@ export function attachQA(battle: Battle, renderer: Renderer) {
   const target = window as unknown as { __CRATER_QA__?: () => unknown };
   target.__CRATER_QA__ = () => ({
     phase: battle.phase,
+    turn: battle.turn,
+    target: battle.target,
+    drone: battle.drone
+      ? {
+          ...battle.drone,
+          destination: { ...battle.drone.destination },
+          trail: [],
+        }
+      : null,
+    defense: battle.defense ? { ...battle.defense } : null,
+    canEmp: battle.canEmp("player"),
+    aiMemory: { ...battle.aiMemory },
     visuals: {
+      pulses: renderer.pulses.length,
       particles: renderer.particles.length,
       bursts: renderer.bursts.length,
       labels: renderer.labels.length,

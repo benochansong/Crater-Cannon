@@ -1,0 +1,191 @@
+{
+  "date": "2026-11-22",
+  "method": "Same 20 fixed seeds per difficulty. Player benchmark: exact solver plus angle ±4°, power ±5, mixed weapons, 65% EMP response, public drone controls. No HP/positions/turn outcome injection. Time excludes human thinking.",
+  "firstShot": [
+    {
+      "difficulty": "easy",
+      "samples": 40,
+      "phase2HitRate": 0.525,
+      "phase3HitRate": 0.025,
+      "phase2DirectRate": 0.225,
+      "phase3DirectRate": 0
+    },
+    {
+      "difficulty": "normal",
+      "samples": 40,
+      "phase2HitRate": 0.95,
+      "phase3HitRate": 0.125,
+      "phase2DirectRate": 0.4,
+      "phase3DirectRate": 0.075
+    },
+    {
+      "difficulty": "hard",
+      "samples": 40,
+      "phase2HitRate": 1,
+      "phase3HitRate": 0.475,
+      "phase2DirectRate": 0.525,
+      "phase3DirectRate": 0.225
+    }
+  ],
+  "results": [
+    {
+      "difficulty": "easy",
+      "matches": 20,
+      "aiWinRate": 0,
+      "draws": 0,
+      "timeouts": 0,
+      "aiHitRate": 0.34513274336283184,
+      "aiDirectRate": 0.1504424778761062,
+      "meanSeconds": 50.632916666666404,
+      "meanAIEMP": 0.25,
+      "weapons": {
+        "shell": {
+          "shots": 102,
+          "hits": 33,
+          "direct": 13,
+          "damage": 570,
+          "usageShare": 0.9026548672566371,
+          "damagePerUse": 5.588235294117647
+        },
+        "crater": {
+          "shots": 0,
+          "hits": 0,
+          "direct": 0,
+          "damage": 0,
+          "usageShare": 0,
+          "damagePerUse": 0
+        },
+        "shock": {
+          "shots": 0,
+          "hits": 0,
+          "direct": 0,
+          "damage": 0,
+          "usageShare": 0,
+          "damagePerUse": 0
+        },
+        "drone": {
+          "shots": 5,
+          "hits": 2,
+          "direct": 1,
+          "damage": 33,
+          "usageShare": 0.04424778761061947,
+          "damagePerUse": 6.6
+        },
+        "missile": {
+          "shots": 6,
+          "hits": 4,
+          "direct": 3,
+          "damage": 68,
+          "usageShare": 0.05309734513274336,
+          "damagePerUse": 11.333333333333334
+        }
+      }
+    },
+    {
+      "difficulty": "normal",
+      "matches": 20,
+      "aiWinRate": 0.25,
+      "draws": 0,
+      "timeouts": 0,
+      "aiHitRate": 0.5947712418300654,
+      "aiDirectRate": 0.2679738562091503,
+      "meanSeconds": 65.9270833333375,
+      "meanAIEMP": 1.15,
+      "weapons": {
+        "shell": {
+          "shots": 70,
+          "hits": 44,
+          "direct": 17,
+          "damage": 684,
+          "usageShare": 0.45751633986928103,
+          "damagePerUse": 9.771428571428572
+        },
+        "crater": {
+          "shots": 17,
+          "hits": 9,
+          "direct": 3,
+          "damage": 80,
+          "usageShare": 0.1111111111111111,
+          "damagePerUse": 4.705882352941177
+        },
+        "shock": {
+          "shots": 20,
+          "hits": 12,
+          "direct": 0,
+          "damage": 53,
+          "usageShare": 0.13071895424836602,
+          "damagePerUse": 2.65
+        },
+        "drone": {
+          "shots": 21,
+          "hits": 10,
+          "direct": 6,
+          "damage": 181,
+          "usageShare": 0.13725490196078433,
+          "damagePerUse": 8.619047619047619
+        },
+        "missile": {
+          "shots": 25,
+          "hits": 16,
+          "direct": 15,
+          "damage": 302,
+          "usageShare": 0.16339869281045752,
+          "damagePerUse": 12.08
+        }
+      }
+    },
+    {
+      "difficulty": "hard",
+      "matches": 20,
+      "aiWinRate": 0.5,
+      "draws": 0,
+      "timeouts": 0,
+      "aiHitRate": 0.7357142857142858,
+      "aiDirectRate": 0.4642857142857143,
+      "meanSeconds": 63.539166666669,
+      "meanAIEMP": 1.4,
+      "weapons": {
+        "shell": {
+          "shots": 43,
+          "hits": 31,
+          "direct": 16,
+          "damage": 561,
+          "usageShare": 0.30714285714285716,
+          "damagePerUse": 13.046511627906977
+        },
+        "crater": {
+          "shots": 6,
+          "hits": 3,
+          "direct": 0,
+          "damage": 23,
+          "usageShare": 0.04285714285714286,
+          "damagePerUse": 3.8333333333333335
+        },
+        "shock": {
+          "shots": 15,
+          "hits": 15,
+          "direct": 6,
+          "damage": 141,
+          "usageShare": 0.10714285714285714,
+          "damagePerUse": 9.4
+        },
+        "drone": {
+          "shots": 38,
+          "hits": 21,
+          "direct": 21,
+          "damage": 462,
+          "usageShare": 0.2714285714285714,
+          "damagePerUse": 12.157894736842104
+        },
+        "missile": {
+          "shots": 38,
+          "hits": 33,
+          "direct": 22,
+          "damage": 490,
+          "usageShare": 0.2714285714285714,
+          "damagePerUse": 12.894736842105264
+        }
+      }
+    }
+  ]
+}

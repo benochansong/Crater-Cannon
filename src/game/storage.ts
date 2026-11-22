@@ -3,12 +3,14 @@ export interface Settings {
   volume: number;
   muted: boolean;
   shake: boolean;
+  autoEmp: boolean;
   difficulty: Difficulty;
 }
 export const defaults: Settings = {
   volume: 0.55,
   muted: false,
   shake: true,
+  autoEmp: false,
   difficulty: "normal",
 };
 export function loadSettings(): Settings {
@@ -19,6 +21,7 @@ export function loadSettings(): Settings {
         typeof v.volume === "number" && Number.isFinite(v.volume)
           ? Math.max(0, Math.min(1, v.volume))
           : defaults.volume,
+      autoEmp: typeof v.autoEmp === "boolean" ? v.autoEmp : false,
       muted: typeof v.muted === "boolean" ? v.muted : false,
       shake: typeof v.shake === "boolean" ? v.shake : true,
       difficulty: ["easy", "normal", "hard"].includes(v.difficulty)
@@ -96,5 +99,20 @@ export function finishTutorial() {
     localStorage.setItem("crater.tutorial", "done");
   } catch {
     /* Optional. */
+  }
+}
+
+export function weaponHintSeen(kind: string) {
+  try {
+    return localStorage.getItem("crater.hint." + kind) === "done";
+  } catch {
+    return false;
+  }
+}
+export function markWeaponHint(kind: string) {
+  try {
+    localStorage.setItem("crater.hint." + kind, "done");
+  } catch {
+    /* Optional tutorial storage. */
   }
 }
