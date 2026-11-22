@@ -1,6 +1,22 @@
 import type { Side } from "./engine";
-export type AirKind = "helicopter" | "bomber";
+export type AirKind = "helicopter" | "bomber" | "artillery" | "propeller";
 export const AIR = {
+  artillery: {
+    name: "포병 지원",
+    callSign: "FIELD BATTERY",
+    damage: 24,
+    radius: 115,
+    duration: 4.8,
+    description: "예고 구역 포격 · 지형 파괴 · 최대 24",
+  },
+  propeller: {
+    name: "프로펠러 공격기",
+    callSign: "SKY LARK",
+    damage: 26,
+    radius: 140,
+    duration: 4.8,
+    description: "저공 접근 · 폭탄 3개 투하 · 최대 26",
+  },
   helicopter: {
     name: "공격 헬기",
     callSign: "SKY HUNTER",
@@ -55,13 +71,15 @@ export function makeOperation(reservation: AirReservation): AirOperation {
 export function airDamage(kind: AirKind, distance: number) {
   return kind === "helicopter"
     ? Math.round(9 * Math.max(0, 1 - Math.max(0, distance - 28) / 42))
-    : Math.round(30 * Math.max(0, 1 - distance / AIR.bomber.radius));
+    : Math.round(
+        AIR[kind].damage * Math.max(0, 1 - distance / AIR[kind].radius),
+      );
 }
 export function airPosition(a: AirOperation) {
   const dir = a.owner === "player" ? 1 : -1,
     start = dir === 1 ? -220 : 1500,
     end = dir === 1 ? 1500 : -220;
-  if (a.kind === "bomber")
+  if (a.kind !== "helicopter")
     return { x: start + (end - start) * Math.min(1, a.age / 4.2), y: 215, dir };
   const hold = Math.max(150, Math.min(1130, a.targetX - dir * 100));
   const x =

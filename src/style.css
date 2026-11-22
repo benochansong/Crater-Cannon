@@ -1993,3 +1993,521 @@ h2 {
     line-height: 1.5;
   }
 }
+/* Chronicles of War: dossier pages share the battlefield's olive and paper palette. */
+[hidden] {
+  display: none !important;
+}
+.campaign-screen,
+.briefing-screen,
+.mission-result,
+.era-transition {
+  max-width: 1280px;
+  margin: 0 auto 30px;
+  background: #f0ecd9;
+  color: #253e36;
+  border: 1px solid #c0c7ac;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 18px 45px #203b3822;
+}
+.app:has(.campaign-screen),
+.app:has(.briefing-screen),
+.app:has(.mission-result),
+.app:has(.era-transition) {
+  max-width: 1400px;
+  width: 94%;
+}
+.campaign-screen {
+  padding: 30px;
+}
+.campaign-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+.campaign-heading h1 {
+  font-size: clamp(25px, 3vw, 42px);
+  letter-spacing: -1.4px;
+  margin: 9px 0;
+}
+.campaign-heading small,
+.briefing-body > small,
+.mission-result > div > small {
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #7d7959;
+}
+.campaign-screen p,
+.briefing-screen p,
+.mission-result p {
+  line-height: 1.8;
+}
+.campaign-era-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.campaign-era-tabs button {
+  padding: 18px;
+  text-align: left;
+  font-size: 18px;
+  border: 1px solid #b8bea5;
+  border-radius: 10px;
+  background: #e2e3cb;
+  color: #33493d;
+}
+.campaign-era-tabs button[aria-pressed="true"] {
+  background: #36584c;
+  color: #faf0d0;
+  border-color: #36584c;
+}
+.campaign-era-tabs small {
+  display: block;
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 6px;
+}
+.campaign-overview {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #dfe3cd;
+  align-items: stretch;
+  margin-bottom: 28px;
+}
+.campaign-art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.campaign-overview > .campaign-art {
+  height: 100%;
+  object-fit: cover;
+}
+.campaign-overview > div {
+  padding: 26px;
+}
+.campaign-overview h2 {
+  font-size: 28px;
+  margin: 10px 0;
+}
+.historical-note {
+  font-size: 12px;
+  color: #586b5d;
+}
+.mission-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.mission-card {
+  border: 1px solid #bcc6aa;
+  background: #faf7e9;
+  border-radius: 13px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.mission-card > div {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 9px;
+}
+.mission-card h3 {
+  font-size: 21px;
+  margin: 0;
+}
+.mission-card p {
+  font-size: 13px;
+  margin: 0;
+}
+.mission-card .loadout {
+  color: #67765d;
+  font-size: 11px;
+  min-height: 36px;
+}
+.mission-card small {
+  font-size: 10px;
+  letter-spacing: 1px;
+  font-weight: 800;
+}
+.mission-card strong {
+  font-size: 12px;
+  margin-top: auto;
+}
+.mission-card button {
+  margin-top: 8px;
+  min-height: 43px;
+}
+.mission-card.locked > .campaign-art {
+  filter: saturate(0.35);
+  opacity: 0.65;
+}
+.campaign-bottom {
+  display: flex;
+  gap: 25px;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  font-size: 12px;
+}
+.campaign-bottom button {
+  white-space: nowrap;
+}
+.briefing-screen > .campaign-art,
+.mission-result > .campaign-art {
+  max-height: 310px;
+  object-fit: cover;
+  object-position: center 55%;
+}
+.briefing-body,
+.mission-result > div {
+  padding: 30px 45px;
+}
+.briefing-body h1,
+.mission-result h1 {
+  font-size: 32px;
+  margin: 12px 0 24px;
+}
+.radio-brief {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  background: #e0e4cf;
+  padding: 20px;
+  border-left: 4px solid #708e6c;
+  border-radius: 8px;
+}
+.commander-portrait {
+  width: 100px;
+  flex-shrink: 0;
+}
+.radio-brief small {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+.radio-brief p {
+  margin-bottom: 0;
+}
+.briefing-orders {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 25px;
+  margin: 24px 0;
+}
+.briefing-orders b {
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: #6b7959;
+}
+.briefing-orders p {
+  margin: 8px 0;
+}
+.briefing-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.briefing-actions button {
+  padding: 13px 24px;
+  border-radius: 9px;
+}
+.campaign-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin: 24px 0;
+}
+.campaign-stat-grid span {
+  font-size: 12px;
+  padding: 16px;
+  background: #e0e5cf;
+  border-radius: 8px;
+}
+.campaign-stat-grid b {
+  display: block;
+  font-size: 24px;
+  margin-top: 10px;
+}
+.era-transition {
+  position: relative;
+  background: #152d31;
+  color: #f3e9cb;
+}
+.era-transition > .campaign-art {
+  opacity: 0.5;
+  min-height: 540px;
+  object-fit: cover;
+  animation: era-reveal 1s ease;
+}
+.era-transition > div {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 25px;
+  text-align: center;
+  background: linear-gradient(transparent, #122d30dd);
+}
+.era-transition small {
+  font-size: 20px;
+  letter-spacing: 5px;
+}
+.era-transition h1 {
+  font-size: clamp(23px, 3vw, 40px);
+}
+.era-transition progress {
+  width: 260px;
+  height: 5px;
+  margin: 25px;
+  accent-color: #ead296;
+}
+.era-transition button {
+  color: #f2e5b7;
+  border: 1px solid #b8c5a5;
+  padding: 14px;
+  border-radius: 9px;
+}
+@keyframes era-reveal {
+  from {
+    opacity: 0.15;
+    transform: scale(1.03);
+  }
+  to {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+}
+.campaign-start {
+  font-size: 18px;
+  min-height: 52px;
+}
+.campaign-start small {
+  font-size: 10px;
+  display: block;
+  letter-spacing: 1px;
+}
+.menu-actions .start {
+  min-height: 46px;
+  margin-top: 8px;
+}
+.title-screen .slogan {
+  margin-bottom: 8px;
+}
+.title-screen .title-tag {
+  margin-bottom: 15px;
+}
+.mission-objective {
+  position: absolute;
+  left: 50%;
+  top: 127px;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  max-width: 90%;
+  background: #243e38de;
+  color: #fff3cd;
+  padding: 7px 13px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.mission-objective span {
+  font-size: 11px;
+}
+.reaction-shield {
+  position: absolute;
+  z-index: 6;
+  bottom: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #c1f2ed;
+  color: #204d55;
+  border: 2px solid #6caeb2;
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-weight: 800;
+  font-size: 13px;
+  white-space: nowrap;
+  box-shadow: 0 4px 20px #214b5655;
+}
+.air-budget {
+  align-self: center;
+  color: #5a6d53;
+  padding: 0 8px;
+}
+.save-warning {
+  padding: 12px;
+  background: #ffe4ac;
+  border-radius: 8px;
+  color: #754723;
+}
+.tactic-grid:has(button:nth-child(5)) {
+  grid-template-columns: repeat(5, 1fr);
+}
+.tactic-grid:has(button:nth-child(5)) .tactic-card {
+  padding: 8px;
+}
+.tactic-grid:has(button:nth-child(5)) .tactic-card b {
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .campaign-screen {
+    padding: 17px;
+  }
+  .campaign-heading {
+    align-items: flex-start;
+  }
+  .campaign-heading button {
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .campaign-overview {
+    grid-template-columns: 1fr;
+  }
+  .campaign-overview > .campaign-art {
+    max-height: 220px;
+  }
+  .campaign-overview > div {
+    padding: 18px;
+  }
+  .mission-grid {
+    grid-template-columns: 1fr;
+  }
+  .campaign-era-tabs button {
+    padding: 12px;
+    font-size: 14px;
+  }
+  .campaign-bottom {
+    display: block;
+  }
+  .briefing-body,
+  .mission-result > div {
+    padding: 22px;
+  }
+  .briefing-body h1,
+  .mission-result h1 {
+    font-size: 25px;
+  }
+  .radio-brief {
+    gap: 12px;
+    padding: 12px;
+    font-size: 13px;
+  }
+  .commander-portrait {
+    width: 65px;
+  }
+  .briefing-orders {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .campaign-stat-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .mission-objective {
+    top: 92px;
+    padding: 4px 8px;
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
+    white-space: normal;
+    width: max-content;
+  }
+  .mission-objective b,
+  .mission-objective span {
+    font-size: 9px;
+  }
+  .reaction-shield {
+    bottom: 35px;
+    font-size: 10px;
+    padding: 8px;
+  }
+  .tactic-grid:has(button:nth-child(5)) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .air-cards {
+    flex-wrap: wrap;
+  }
+  .air-budget {
+    width: 100%;
+  }
+  .campaign-start {
+    min-height: 40px;
+    font-size: 14px;
+  }
+  .menu-actions .start {
+    min-height: 36px;
+    margin-top: 5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .era-transition > .campaign-art {
+    animation: none;
+  }
+}
+/* Separate mission objectives from the turn announcement at every arena size. */
+.arena:has(.mission-objective) .turn-banner:not(.in-flight) {
+  top: 29%;
+}
+.mission-objective {
+  top: 21%;
+}
+.campaign-heading button,
+.campaign-bottom button,
+.briefing-actions button:not(.primary) {
+  background: #e0e5cf;
+  border: 1px solid #acb99b;
+  border-radius: 9px;
+  padding: 10px 14px;
+  color: #334f40;
+  font-weight: 700;
+}
+.campaign-heading > div {
+  min-width: 0;
+}
+.campaign-heading > div > small {
+  letter-spacing: 1px;
+}
+@media (max-width: 760px) {
+  .campaign-heading {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .campaign-heading > div {
+    width: 100%;
+  }
+  .campaign-heading button {
+    margin-left: auto;
+  }
+  .mission-objective {
+    top: 36%;
+  }
+  .arena:has(.mission-objective) .turn-banner:not(.in-flight) {
+    top: 25%;
+  }
+  .campaign-era-tabs {
+    gap: 8px;
+  }
+}
+.air-budget {
+  grid-column: 1 / -1;
+  font-size: 10px;
+  line-height: 1.2;
+}
+.air-cards {
+  gap: 5px 10px;
+}

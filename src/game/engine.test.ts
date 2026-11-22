@@ -211,6 +211,7 @@ describe("battle lifecycle", () => {
     const b = new Battle();
     b.ai.hp = 10;
     forceImpact(b, "shell");
+    b.guardTime = 0; // Collision fixture starts after the response window.
     for (let i = 0; i < 20; i++) b.update(STEP);
     expect(b.ai.hp).toBe(0);
     expect(b.stats.damage).toBe(10);

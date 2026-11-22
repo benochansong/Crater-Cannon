@@ -1,3 +1,4 @@
+import { drawCampaignBackground, drawEraTank } from "./campaignRenderer";
 import { drawTactics } from "./tacticalRenderer";
 import { Camera } from "./camera";
 import {
@@ -266,6 +267,7 @@ export class Renderer {
     ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
     this.sky(ctx);
+    drawCampaignBackground(ctx, game);
     ctx.save();
     this.shake *= Math.exp(-8 * dt);
     if (options.shake && this.shake > 0.1)
@@ -304,11 +306,13 @@ export class Renderer {
       );
     }
     for (const t of game.tanks)
-      this.tank(
-        ctx,
-        t,
-        game.result?.outcome === (t.side === "player" ? "victory" : "defeat"),
-      );
+      if (game.config.field !== "valley") drawEraTank(ctx, t, game, this.time);
+      else
+        this.tank(
+          ctx,
+          t,
+          game.result?.outcome === (t.side === "player" ? "victory" : "defeat"),
+        );
     if (game.projectile) {
       const p = game.projectile;
       for (let i = 0; i < p.trail.length; i += 2) {

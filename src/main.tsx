@@ -1,3 +1,16 @@
+import {
+  CampaignSelect,
+  MissionBriefing,
+  EraTransition,
+  MissionResult,
+} from "./components/Campaign";
+import { getMission } from "./game/campaign";
+import type { Mission } from "./game/campaign";
+import {
+  loadCampaign,
+  saveCampaign,
+  completeMission,
+} from "./game/campaignStorage";
 import { AIR } from "./game/airSupport";
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -33,11 +46,17 @@ const testSeed =
 const timeLabel = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 function App() {
+  const [progress, setProgress] = useState(loadCampaign);
+  const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
+  const [reward, setReward] = useState(0);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [settings, setSettings] = useState(loadSettings);
   const [battle, setBattle] = useState(
     () => new Battle(settings.difficulty, testSeed),
   );
-  const [screen, setScreen] = useState<"menu" | "battle" | "result">("menu");
+  const [screen, setScreen] = useState<
+    "menu" | "battle" | "result" | "campaign" | "briefing" | "transition"
+  >("menu");
   const [overlay, setOverlay] = useState<
     "help" | "records" | "settings" | null
   >(null);
@@ -55,6 +74,9 @@ function App() {
   useEffect(() => {
     if (import.meta.env.MODE === "test") return attachQA(battle, renderer);
   }, [battle, renderer]);
+  useEffect(() => {
+    setSaveFailed(!saveCampaign(progress));
+  }, [progress]);
   useEffect(() => {
     saveSettings(settings);
     sound.configure(settings.volume, settings.muted);
@@ -113,6 +135,17 @@ function App() {
         if (battle.result && recorded.current !== battle.result.id) {
           recorded.current = battle.result.id;
           saveRecord(battle.result);
+          const m = getMission(battle.config.missionId);
+          if (m) {
+            setReward(
+              battle.result.outcome === "victory" &&
+                battle.result.enemyHp <= 0 &&
+                !progress.completed.includes(m.id)
+                ? m.reward
+                : 0,
+            );
+            setProgress((p) => completeMission(p, m.id, battle.result!));
+          }
           setScreen("result");
         }
       }
@@ -122,7 +155,7 @@ function App() {
           : null,
       );
       const ctx = canvas.current?.getContext("2d");
-      if (ctx)
+      if (ctx && ["menu", "battle", "result"].includes(screen))
         renderer.draw(ctx, battle, stopped ? 0 : dt, {
           shake: settings.shake,
           menu: screen === "menu",
@@ -136,7 +169,15 @@ function App() {
     };
     frame = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(frame);
-  }, [battle, renderer, sound, screen, paused, settings.shake]);
+  }, [
+    battle,
+    renderer,
+    sound,
+    screen,
+    paused,
+    settings.shake,
+    progress.completed,
+  ]);
   function aim(angle: number, power: number) {
     battle.aim(angle, power);
     refresh((n) => n + 1);
@@ -195,7 +236,37 @@ function App() {
     if (hint) markWeaponHint(hint);
     setHint(null);
   }
+  function openMission(m: Mission) {
+    if (!progress.unlocked.includes(m.id)) return;
+    setSelectedMission(m);
+    setHint(null);
+    sound.stop();
+    setOverlay(null);
+    setProgress((p) => ({ ...p, current: m.id }));
+    setScreen(
+      m.era === "modern" && !progress.transitionSeen
+        ? "transition"
+        : "briefing",
+    );
+  }
+  function finishTransition() {
+    setProgress((p) => ({ ...p, transitionSeen: true }));
+    setScreen("briefing");
+  }
+  function startMission(m: Mission) {
+    held.current.clear();
+    setHint(null);
+    sound.unlock();
+    sound.stop();
+    recorded.current = null;
+    setBattle(new Battle(m.difficulty, testSeed, m.config));
+    setScreen("battle");
+    setOverlay(null);
+    setTutorial(m.number === 1);
+    setReward(0);
+  }
   function start() {
+    setSelectedMission(null);
     held.current.clear();
     setHint(null);
     sound.unlock();
@@ -232,6 +303,11 @@ function App() {
     if (key === "Escape") {
       event.preventDefault();
       setOverlay("settings");
+      return;
+    }
+    if (key === "r") {
+      event.preventDefault();
+      if (!event.repeat) tactic(() => battle.activateShield());
       return;
     }
     if (key === "e") {
@@ -293,7 +369,7 @@ function App() {
     if (key === "ArrowLeft")
       aim(battle.player.angle, battle.player.power - step);
     if (["1", "2", "3", "4", "5"].includes(key))
-      select(weaponIds[Number(key) - 1]);
+      select(battle.allowedWeapons[Number(key) - 1] ?? "shell");
     if (key === " " && !event.repeat) fire();
   });
   useEffect(() => {
@@ -386,7 +462,7 @@ function App() {
           aria-label="크레이터 캐논 메인 메뉴"
         >
           <span className="brand-icon">✦</span> CRATER CANNON{" "}
-          <span className="edition">DEFENSE & AIR SUPPORT</span>
+          <span className="edition">CHRONICLES OF WAR</span>
         </button>
         <div className="top-actions">
           <span className="local-badge">싱글 플레이 · 로컬 전투</span>
@@ -407,7 +483,44 @@ function App() {
           </button>
         </div>
       </header>
+      {saveFailed && (
+        <p role="status" className="save-warning">
+          브라우저 저장 공간을 사용할 수 없습니다. 현재 창에서는 진행을
+          유지하지만 새로고침하면 사라질 수 있습니다.
+        </p>
+      )}
+      {screen === "campaign" && (
+        <CampaignSelect
+          progress={progress}
+          onMission={openMission}
+          onBack={menu}
+          onFree={start}
+        />
+      )}
+      {screen === "briefing" && selectedMission && (
+        <MissionBriefing
+          mission={selectedMission}
+          onStart={() => startMission(selectedMission)}
+          onBack={() => setScreen("campaign")}
+        />
+      )}
+      {screen === "transition" && <EraTransition onDone={finishTransition} />}
+      {screen === "result" && result && selectedMission && (
+        <MissionResult
+          mission={selectedMission}
+          result={result}
+          progress={progress}
+          reward={reward}
+          onRetry={() => startMission(selectedMission)}
+          onNext={openMission}
+          onBack={() => setScreen("campaign")}
+        />
+      )}
       <section
+        hidden={
+          !["menu", "battle", "result"].includes(screen) ||
+          (screen === "result" && !!selectedMission)
+        }
         className={`game-shell ${screen === "menu" ? "is-menu" : ""}`}
         aria-label="그린 밸리 전장"
       >
@@ -430,6 +543,34 @@ function App() {
             }}
             tabIndex={0}
           />
+          {screen === "battle" && battle.config.missionId && (
+            <div className="mission-objective">
+              <b>{selectedMission?.title}</b>
+              <span>
+                {battle.config.fortified
+                  ? battle.fortified
+                    ? "진지 붕괴 " +
+                      Math.round(battle.breachProgress * 100) +
+                      "% · 철갑 직격 " +
+                      battle.breachHits +
+                      "/3"
+                    : "진지 붕괴 완료 · 지휘 차량 격파"
+                  : selectedMission?.objective}
+              </span>
+            </div>
+          )}
+          {screen === "battle" &&
+            battle.config.era === "modern" &&
+            battle.isReaction() &&
+            battle.canShield() && (
+              <button
+                className="reaction-shield"
+                onClick={() => tactic(() => battle.activateShield())}
+              >
+                반응 방어막 [R] · 피해 50% 감소 · 턴 소비 없음{" "}
+                {battle.guardTime > 0 ? battle.guardTime.toFixed(1) + "초" : ""}
+              </button>
+            )}
           {screen === "battle" && battle.canEmp("player") && (
             <div className="emp-alert" role="status">
               <AmmoIcon kind="emp" />
@@ -465,7 +606,7 @@ function App() {
                 {battle.pendingAir.responseStarted
                   ? "대응 행동 1회 후 실행"
                   : "상대에게 대응 행동 1회 제공"}{" "}
-                · 표시 구역을 피하거나 방어막을 사용하세요
+                · 표시 구역을 피하거나 방어 행동을 사용하세요
               </span>
             </div>
           )}
@@ -494,8 +635,22 @@ function App() {
               <p className="slogan">한 발의 포탄이 전장을 바꾼다!</p>
               <div className="title-tag">조준의 긴장감. 명중의 짜릿함.</div>
               <div className="menu-actions">
-                <button className="primary start" onClick={start}>
-                  <span>게임 시작</span>
+                <button
+                  className="primary campaign-start"
+                  onClick={() => {
+                    setSelectedMission(null);
+                    setScreen("campaign");
+                    sound.stop();
+                  }}
+                >
+                  스토리 캠페인 <small>STORY CAMPAIGN</small>
+                </button>
+                <button
+                  className="primary start"
+                  onClick={start}
+                  aria-label="게임 시작"
+                >
+                  <span>자유 전투</span>
                   <span className="key-hint">PLAY</span>
                 </button>
                 <div className="secondary-actions">
@@ -523,7 +678,7 @@ function App() {
                     <span className="pilot-avatar blue">01</span>
                     <div>
                       <small>PLAYER</small>
-                      <strong>블루 코멧</strong>
+                      <strong>{battle.config.playerName}</strong>
                     </div>
                     <b>
                       {battle.player.hp}
@@ -552,7 +707,7 @@ function App() {
                     <span className="pilot-avatar red">02</span>
                     <div>
                       <small>AI · {difficultyNames[battle.difficulty]}</small>
-                      <strong>레드 배저</strong>
+                      <strong>{battle.config.enemyName}</strong>
                     </div>
                     <b>
                       {battle.ai.hp}
@@ -579,7 +734,8 @@ function App() {
               )}
               <div className="arena-footer">
                 <span>
-                  GREEN VALLEY <i>그린 밸리</i>
+                  {battle.config.era === "ww2" ? "1944–1945" : "MODERN"}{" "}
+                  <i>{selectedMission?.location ?? "그린 밸리"}</i>
                 </span>
                 <span>
                   {timeLabel(Math.round(battle.elapsed))} · {battle.stats.shots}{" "}
@@ -615,6 +771,7 @@ function App() {
             onEmp={emp}
             onLock={lock}
             onSteer={(x, y) => battle.steerDrone(x, y)}
+            onFieldDefense={(kind) => tactic(() => battle.fieldDefense(kind))}
             onRepair={() => tactic(() => battle.repair())}
             onShield={() => tactic(() => battle.activateShield())}
             onMove={(direction) => tactic(() => battle.move(direction))}
@@ -633,10 +790,10 @@ function App() {
         <span>한 발의 포탄이 전장의 운명을 바꾼다.</span>
         <div>
           <button onClick={() => setOverlay("help")}>조작 안내</button>
-          <span>PHASE 4 / DEFENSE & AIR SUPPORT</span>
+          <span>PHASE 5 / CHRONICLES OF WAR</span>
         </div>
       </footer>
-      {screen === "result" && result && (
+      {screen === "result" && result && !selectedMission && (
         <div className="result-backdrop">
           <section
             className={`result-card ${result.outcome}`}
@@ -758,7 +915,10 @@ function App() {
                   ))}
                 </select>
               </label>
-              <small className="muted">난이도는 새 대결부터 적용됩니다.</small>
+              <small className="muted">
+                자유 전투의 새 대결부터 적용됩니다. 캠페인 난이도는 임무별로
+                고정됩니다.
+              </small>
               <label className="setting-row">
                 자동 EMP 방어
                 <input
@@ -824,12 +984,15 @@ function App() {
               <small className="eyebrow">HOW TO PLAY</small>
               <h2>한 발에 담는 전략</h2>
               <p className="modern-help">
-                방어 · 이동에서 HP +20 긴급 정비, 다음 적 공격 피해 50% 감소
-                방어막, 최대 145 이동을 선택합니다. 각각 공격 턴을 소비합니다.
-                항공 지원에서 헬기 또는 폭격기를 선택하고 전장이나 슬라이더로
-                구역을 지정하세요. 상대에게 행동 1회 후 지원이 실행됩니다. EMP는
-                적 드론/유도탄 출격 중 4초 안에 E로 사용하며 항공 지원에는
-                적용되지 않습니다. 최대 40라운드에서 남은 HP로 판정합니다.
+                정비는 HP 28을 회복하며 연속 사용할 수 없습니다. 현대 방어막은
+                적 공격 중 R로 반응하면 턴을 소비하지 않고 피해를 50% 줄입니다.
+                사전 전개와 이동은 1턴입니다. 자유 전투의 헬기·폭격기는 합계
+                1회이며, 요청 후 상대에게 대응 행동 1회를 제공합니다. EMP는
+                드론·유도탄 출격 중 4초 안에 E로 사용합니다. 캠페인에서는 시대와
+                임무에 맞는 장비만 사용할 수 있습니다. WWII의 연막은 다음 적
+                포격 조준을 흔들고, 엄폐는 다음 공격 피해를 35% 줄입니다.
+                캠페인은 40라운드 안에 적을 격파해야 하며, 자유 전투는 남은 HP로
+                판정합니다.
               </p>
               <div className="help-steps">
                 <p>
@@ -858,9 +1021,10 @@ function App() {
                 </p>
               </div>
               <p className="modern-help">
-                드론: 4 선택 → 출격 → WASD/방향키 이동 → Space 공격. 유도탄: 5
-                선택 → 목표 지정 → 발사. EMP: 상대 전자 공격 출격 중 E. 각 전자
-                무기와 EMP는 경기당 2회입니다.
+                자유 전투 드론: 4 선택 → 출격 → WASD/방향키 이동 → Space 공격.
+                유도탄: 5 선택 → 목표 지정 → 발사. EMP: 상대 전자 공격 출격 중
+                E. 각 전자 무기와 EMP는 경기당 2회입니다. 캠페인 단축키는 각
+                장비 카드에 표시됩니다.
               </p>
               <div className="help-weapons">
                 {weaponIds.map((id) => (

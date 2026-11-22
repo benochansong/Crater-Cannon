@@ -4,6 +4,11 @@ import type { Renderer } from "./renderer";
 export function attachQA(battle: Battle, renderer: Renderer) {
   const target = window as unknown as { __CRATER_QA__?: () => unknown };
   target.__CRATER_QA__ = () => ({
+    config: structuredClone(battle.config),
+    breachProgress: battle.breachProgress,
+    fortified: battle.fortified,
+    guardTime: battle.guardTime,
+    canShield: battle.canShield(),
     phase: battle.phase,
     turn: battle.turn,
     action: battle.action ? { ...battle.action } : null,
@@ -24,6 +29,7 @@ export function attachQA(battle: Battle, renderer: Renderer) {
         }
       : null,
     defense: battle.defense ? { ...battle.defense } : null,
+    canRepair: battle.canRepair(),
     canEmp: battle.canEmp("player"),
     aiMemory: { ...battle.aiMemory },
     visuals: {

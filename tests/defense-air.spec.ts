@@ -58,7 +58,7 @@ async function call(page: Page, kind: "공격 헬기" | "폭격기") {
   });
   await waitForState(page, (s) => s.phase === "aim" || !!s.result);
 }
-test("repair then helicopter and bomber, complete victory and reset all resources", async ({
+test("repair then helicopter, enforce shared support budget, complete victory and reset", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -79,13 +79,16 @@ test("repair then helicopter and bomber, complete victory and reset all resource
   await waitForState(page, (s) => s.phase === "aim" || !!s.result);
   expect((await snap(page)).tanks[0].repairs).toBe(1);
   await call(page, "공격 헬기");
-  await call(page, "폭격기");
+  await page.getByRole("button", { name: "항공 지원", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "폭격기 선택" }),
+  ).toBeDisabled();
   s = await snap(page);
   expect(s.supportStats.player.helicopter.shots).toBe(1);
   expect(s.supportStats.player.helicopter.damage).toBeLessThanOrEqual(27);
-  expect(s.supportStats.player.bomber.shots).toBe(1);
+  expect(s.supportStats.player.bomber.shots).toBe(0);
   expect(s.supportStats.player.bomber.damage).toBeLessThanOrEqual(30);
-  expect(s.revision).toBeGreaterThanOrEqual(6);
+  expect(s.revision).toBeGreaterThanOrEqual(3);
   for (let i = 0; i < 500; i++) {
     s = await snap(page);
     if (s.result) break;
@@ -101,7 +104,7 @@ test("repair then helicopter and bomber, complete victory and reset all resource
           .getByRole("button", { name: "방어 · 이동", exact: true })
           .click();
         await page.getByRole("button", { name: /에너지 방어막/ }).click();
-      } else if (s.tanks[0].hp < 40 && s.tanks[0].repairs > 0) {
+      } else if (s.tanks[0].hp < 40 && s.canRepair) {
         await page
           .getByRole("button", { name: "방어 · 이동", exact: true })
           .click();
@@ -138,7 +141,12 @@ test("repair then helicopter and bomber, complete victory and reset all resource
   expect(s.tanks[0].repairs).toBe(2);
   expect(s.tanks[0].shields).toBe(2);
   expect(s.tanks[0].shield).toBe(false);
-  expect(s.tanks[0].support).toEqual({ helicopter: 1, bomber: 1 });
+  expect(s.tanks[0].support).toEqual({
+    helicopter: 1,
+    bomber: 1,
+    artillery: 0,
+    propeller: 0,
+  });
   expect(s.pendingAir).toBeNull();
   expect(s.air).toBeNull();
   expect(s.action).toBeNull();
@@ -197,4 +205,18 @@ test("move out of a bomber warning zone, preserve turn order and deform three gr
   expect(hp - s.tanks[0].hp).toBeLessThan(10);
   expect(s.revision - revision).toBe(3);
   expect(s.pendingAir).toBeNull();
+});
+
+test("player bomber works as the single chosen air operation", async ({
+  page,
+}) => {
+  await start(page, 8);
+  await call(page, "폭격기");
+  const s = await snap(page);
+  expect(s.supportStats.player.bomber.shots).toBe(1);
+  expect(s.tanks[0].airRemaining).toBe(0);
+  await page.getByRole("button", { name: "항공 지원", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "공격 헬기 선택" }),
+  ).toBeDisabled();
 });

@@ -122,7 +122,7 @@ for (const difficulty of ["easy", "normal", "hard"] as Difficulty[]) {
       ...b.supportStats.ai,
     }))
       for (const n of ["shots", "hits", "damage"] as const)
-        weapons[key][n] += stats[n];
+        if (weapons[key]) weapons[key][n] += stats[n];
   }
   const row = {
     difficulty,

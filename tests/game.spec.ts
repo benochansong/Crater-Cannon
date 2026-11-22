@@ -174,7 +174,8 @@ test("high arcs stay visible, settings pause a flying projectile, effects expire
   await setRange(page, "#angle", 80);
   await setRange(page, "#power", 100);
   await page.getByRole("button", { name: /발사!/ }).click();
-  await page.clock.runFor(2200);
+  // Include the modern 2.5-second shield response window before observing the high arc.
+  await page.clock.runFor(4800);
   const high = await snapshot(page);
   expect(high.projectile).not.toBeNull();
   expect(high.visuals.camera.scale).toBeLessThan(0.85);

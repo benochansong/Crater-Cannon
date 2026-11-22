@@ -101,6 +101,12 @@ export function drawTactics(
       ctx.stroke();
       ctx.fillStyle = "#46796c";
       ctx.fillRect(-8, -6, 16, 7);
+      if (b.config.era === "ww2") {
+        ctx.fillStyle = "#b9c58d";
+        ctx.fillRect(-16, -17, 32, 9);
+        ctx.fillStyle = "#e9d4b3";
+        ctx.fillRect(-8, -5, 16, 14);
+      }
       ctx.fillStyle = "#d9fcaf";
       ctx.fillRect(-5, -4, 3, 3);
       ctx.fillRect(3, -4, 3, 3);
@@ -174,6 +180,45 @@ export function drawTactics(
       ctx.fillRect(-3, -20, 6, 8);
       ctx.restore();
     }
+  if (a.kind === "artillery") return;
+  if (a.kind === "propeller") {
+    ctx.save();
+    ctx.translate(pose.x, pose.y);
+    ctx.scale(pose.dir, 1);
+    ctx.fillStyle = "#929a6d";
+    ctx.strokeStyle = "#354b3d";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(85, 0);
+    ctx.lineTo(-72, -13);
+    ctx.lineTo(-94, -32);
+    ctx.lineTo(-109, -32);
+    ctx.lineTo(-96, 9);
+    ctx.lineTo(60, 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(15, -10);
+    ctx.lineTo(-32, -65);
+    ctx.lineTo(-55, -61);
+    ctx.lineTo(-22, 10);
+    ctx.lineTo(-55, 60);
+    ctx.lineTo(-32, 65);
+    ctx.lineTo(22, 10);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#c9e4c9";
+    ctx.fillRect(18, -12, 30, 12);
+    ctx.strokeStyle = "#e5d9ac";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(87, -32 * Math.cos(time * 55));
+    ctx.lineTo(87, 32 * Math.cos(time * 55));
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
   ctx.save();
   ctx.globalAlpha = 0.15;
   ctx.fillStyle = "#24443e";

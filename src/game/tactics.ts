@@ -4,6 +4,8 @@ import type { AirKind } from "./airSupport";
 export type TacticalAction =
   | { kind: "repair" }
   | { kind: "shield" }
+  | { kind: "smoke" }
+  | { kind: "cover" }
   | { kind: "move"; direction: number }
   | { kind: AirKind; targetX: number };
 export function chooseTactic(b: Battle): TacticalAction | null {
@@ -29,6 +31,13 @@ export function chooseTactic(b: Battle): TacticalAction | null {
     if (b.canMove(direction, "ai") && b.random() < 0.58)
       return { kind: "move", direction };
     if (b.canShield("ai")) return { kind: "shield" };
+  }
+  if (b.config.era === "ww2" && b.round > 1) {
+    if (pending && b.canFieldDefense("cover", "ai")) return { kind: "cover" };
+    if (b.canRequestAir("artillery", "ai") && b.round >= 3)
+      return { kind: "artillery", targetX: enemy.x + (b.random() - 0.5) * 60 };
+    if (t.hp < 70 && b.round % 4 === 0 && b.canFieldDefense("smoke", "ai"))
+      return { kind: "smoke" };
   }
   if (
     t.hp <= (b.difficulty === "easy" ? 35 : 55) &&

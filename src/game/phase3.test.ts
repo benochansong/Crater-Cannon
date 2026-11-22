@@ -84,8 +84,8 @@ describe("directly controlled drone", () => {
     b.drone!.y = b.ai.y - 8;
     expect(b.attackDrone()).toBe(true);
     expect(b.attackDrone()).toBe(false);
-    expect(b.ai.hp).toBe(78);
-    expect(b.stats.damage).toBe(22);
+    expect(b.ai.hp).toBe(82);
+    expect(b.stats.damage).toBe(18);
     expect(b.telemetry.player.drone.shots).toBe(1);
     expect(b.droneInput).toEqual({ x: 0, y: 0 });
     expect(b.events.filter((e) => e.type === "explosion")).toHaveLength(1);
@@ -129,12 +129,12 @@ describe("limited guided missile", () => {
       if (jammed) expect(b.useEmp("ai")).toBe(true);
       for (let i = 0; i < 2400 && b.phase !== "resolve"; i++) b.update(STEP);
       expect(b.phase).toBe("resolve");
-      expect(b.ai.hp).toBe(80);
+      expect(b.ai.hp).toBe(82);
       expect(b.telemetry.player.missile).toEqual({
         shots: 1,
         hits: 1,
         direct: 1,
-        damage: 20,
+        damage: 18,
       });
       expect(b.projectile).toBeNull();
     },
@@ -296,9 +296,9 @@ describe("AI estimation and arsenal limits", () => {
       chooseArsenal(b.ai, b.player, b.terrain, "hard", () => 0),
     );
   });
-  it("all five weapons use the published direct damage values", () => {
+  it("all six weapons use the published direct damage values", () => {
     expect(Object.values(WEAPONS).map((w) => w.directDamage)).toEqual([
-      28, 18, 16, 22, 20,
+      26, 24, 16, 16, 18, 18,
     ]);
   });
   it("resets electronics, defenses, input and targeting on retry", () => {

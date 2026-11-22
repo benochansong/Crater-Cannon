@@ -50,14 +50,14 @@ describe("field repair", () => {
     b.phase = "aim";
     expect(b.repair("ai")).toBe(false);
   });
-  it("uses the same 20 HP for AI", () => {
+  it("uses the same 28 HP for AI", () => {
     const b = new Battle();
     b.turn = "ai";
     b.phase = "ai-aim";
     b.ai.hp = 40;
     expect(b.repair("ai")).toBe(true);
     run(b, 1.7);
-    expect(b.ai.hp).toBe(60);
+    expect(b.ai.hp).toBe(68);
     expect(b.ai.repairs).toBe(1);
   });
 });
@@ -258,7 +258,12 @@ describe("air support reservation and response", () => {
   });
   it("resets support and defense state and enforces a finite match", () => {
     const b = new Battle();
-    expect(b.player.support).toEqual({ helicopter: 1, bomber: 1 });
+    expect(b.player.support).toEqual({
+      helicopter: 1,
+      bomber: 1,
+      artillery: 0,
+      propeller: 0,
+    });
     expect(b.ai.repairs).toBe(2);
     expect(b.air).toBeNull();
     expect(b.pendingAir).toBeNull();
@@ -312,7 +317,7 @@ describe("AI tactical decisions", () => {
       if (choice) seen.add(choice.kind);
       b.ai.repairs = 0;
       b.ai.shields = 0;
-      b.ai.support = { helicopter: 0, bomber: 0 };
+      b.ai.support = { helicopter: 0, bomber: 0, artillery: 0, propeller: 0 };
       const empty = chooseTactic(b);
       expect(["repair", "shield", "helicopter", "bomber"]).not.toContain(
         empty?.kind,

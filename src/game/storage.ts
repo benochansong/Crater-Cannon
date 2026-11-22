@@ -73,6 +73,8 @@ export function loadRecords(): BattleResult[] {
   }
 }
 export function saveRecord(record: BattleResult) {
+  // Campaign progress owns its results; never evict the existing free-battle log.
+  if (record.missionId) return;
   try {
     localStorage.setItem(
       "crater.records",

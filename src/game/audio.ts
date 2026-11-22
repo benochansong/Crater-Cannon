@@ -114,7 +114,13 @@ export class Sound {
         this.tone(850, 850, 0.15, "sine", 0.15, 0.2);
       }
       if (e.type === "air-enter") {
-        if (e.airKind === "helicopter")
+        if (e.airKind === "artillery") {
+          this.tone(90, 25, 0.5, "triangle", 0, 0.3);
+          this.noise(0.4, 900, 0.25);
+        } else if (e.airKind === "propeller") {
+          for (let i = 0; i < 18; i++)
+            this.tone(95, 70, 0.15, "sawtooth", i * 0.2, 0.08);
+        } else if (e.airKind === "helicopter")
           for (let i = 0; i < 22; i++)
             this.tone(65, 42, 0.12, "triangle", i * 0.18, 0.18);
         else {

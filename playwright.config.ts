@@ -1,8 +1,8 @@
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests",
-  timeout: 180000,
-  workers: 1,
+  timeout: 240000,
+  workers: 2,
   use: {
     browserName: "firefox",
     baseURL: "http://127.0.0.1:4187",

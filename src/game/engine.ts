@@ -1,3 +1,5 @@
+import { FREE_BATTLE, ERA_WEAPONS, ERA_SUPPORTS } from "./eras";
+import type { BattleConfig, Era } from "./eras";
 import { chooseTactic } from "./tactics";
 import type { TacticalAction } from "./tactics";
 import { AIR, airDamage, makeOperation } from "./airSupport";
@@ -9,13 +11,15 @@ export const HEIGHT = 640;
 export const STEP = 1 / 120;
 export const GRAVITY = 220;
 export type Side = "player" | "ai";
-export type WeaponId = "shell" | "crater" | "shock" | "drone" | "missile";
+export type WeaponId =
+  "shell" | "crater" | "shock" | "drone" | "missile" | "ap";
 export const WEAPON_IDS: WeaponId[] = [
   "shell",
   "crater",
   "shock",
   "drone",
   "missile",
+  "ap",
 ];
 export const EMP_WINDOW = 4;
 export const DRONE_TIME = 5;
@@ -50,13 +54,27 @@ export interface Weapon {
   push: number;
 }
 export const WEAPONS: Record<WeaponId, Weapon> = {
+  ap: {
+    name: "철갑탄",
+    short: "철갑탄",
+    description: "장갑 관통 · 직격 중심",
+    color: "#e4d8ad",
+    damage: 3,
+    directDamage: 26,
+    control: "각도·세기 조준 / Space 발사",
+    counter: "장갑 관통 · 엄폐 감소 효과 15%",
+    radius: 28,
+    crater: 16,
+    depth: 0.5,
+    push: 0,
+  },
   shell: {
     name: "기본 폭발탄",
     short: "폭발탄",
     description: "균형 잡힌 화력 · 무제한",
     color: "#ffbc43",
-    damage: 20,
-    directDamage: 28,
+    damage: 17,
+    directDamage: 24,
     control: "각도·세기 조준 / Space 발사",
     counter: "EMP 영향 없음",
     radius: 68,
@@ -69,8 +87,8 @@ export const WEAPONS: Record<WeaponId, Weapon> = {
     short: "크레이터",
     description: "넓고 깊은 지형 파괴 · 2발",
     color: "#c491ff",
-    damage: 12,
-    directDamage: 18,
+    damage: 10,
+    directDamage: 16,
     control: "각도·세기 조준 / Space 발사",
     counter: "EMP 영향 없음",
     radius: 90,
@@ -97,8 +115,8 @@ export const WEAPONS: Record<WeaponId, Weapon> = {
     short: "드론",
     description: "5초 직접 비행 · 우회 공격",
     color: "#90e09e",
-    damage: 16,
-    directDamage: 22,
+    damage: 13,
+    directDamage: 18,
     radius: 64,
     crater: 28,
     depth: 0.6,
@@ -111,8 +129,8 @@ export const WEAPONS: Record<WeaponId, Weapon> = {
     short: "유도탄",
     description: "목표 지정 · 제한된 방향 전환",
     color: "#ff976a",
-    damage: 14,
-    directDamage: 20,
+    damage: 12,
+    directDamage: 18,
     radius: 60,
     crater: 32,
     depth: 0.65,
@@ -121,6 +139,27 @@ export const WEAPONS: Record<WeaponId, Weapon> = {
     counter: "EMP: 추적 해제, 탄도 비행",
   },
 };
+export function weaponInfo(id: WeaponId, era: Era): Weapon {
+  const w = WEAPONS[id];
+  if (era !== "ww2") return w;
+  if (id === "shell")
+    return {
+      ...w,
+      name: "고폭탄 (HE)",
+      short: "고폭탄",
+      description: "파편 범위 피해 · 무제한",
+      counter: "중장갑에는 철갑탄 권장",
+    };
+  if (id === "crater")
+    return {
+      ...w,
+      name: "중포탄",
+      short: "중포탄",
+      description: "깊은 지형 파괴 · 진지 기초 공략",
+      counter: "장갑 피해보다 지형 파괴 중심",
+    };
+  return w;
+}
 export interface Tank extends Vec {
   side: Side;
   hp: number;
@@ -137,7 +176,12 @@ export interface Tank extends Vec {
   shields: number;
   shield: boolean;
   shieldRaw: number;
-  support: { helicopter: number; bomber: number };
+  support: Record<AirKind, number>;
+  airRemaining: number;
+  smoke: boolean;
+  cover: boolean;
+  smokes: number;
+  covers: number;
 }
 export interface Projectile extends Vec {
   vx: number;
@@ -180,6 +224,7 @@ export interface Stats {
   damage: number;
 }
 export interface BattleResult extends Stats {
+  missionId?: string;
   id: string;
   outcome: Outcome;
   hp: number;
@@ -506,6 +551,28 @@ const weaponStats = () =>
     Stats
   >;
 export class Battle {
+  guardTime = 0;
+  breachHits = 0;
+  get allowedWeapons() {
+    return this.config.weapons.filter((w) =>
+      ERA_WEAPONS[this.config.era].includes(w),
+    );
+  }
+  get allowedSupports() {
+    return this.config.supports.filter((w) =>
+      ERA_SUPPORTS[this.config.era].includes(w),
+    );
+  }
+  get breachProgress() {
+    if (!this.config.fortified) return 1;
+    let depth = 0;
+    for (let x = 1035; x <= 1105; x++)
+      depth += this.terrain[x] - this.originalTerrain[x];
+    return Math.min(1, Math.max(this.breachHits / 3, depth / 71 / 18));
+  }
+  get fortified() {
+    return !!this.config.fortified && this.breachProgress < 1;
+  }
   terrain: Float64Array;
   originalTerrain: Float64Array;
   tanks: [Tank, Tank];
@@ -521,8 +588,28 @@ export class Battle {
     distance: number;
   } | null = null;
   actionCounts = {
-    player: { repair: 0, shield: 0, move: 0, helicopter: 0, bomber: 0 },
-    ai: { repair: 0, shield: 0, move: 0, helicopter: 0, bomber: 0 },
+    player: {
+      repair: 0,
+      shield: 0,
+      move: 0,
+      helicopter: 0,
+      bomber: 0,
+      artillery: 0,
+      propeller: 0,
+      smoke: 0,
+      cover: 0,
+    },
+    ai: {
+      repair: 0,
+      shield: 0,
+      move: 0,
+      helicopter: 0,
+      bomber: 0,
+      artillery: 0,
+      propeller: 0,
+      smoke: 0,
+      cover: 0,
+    },
   };
   lastAction: Record<Side, string> = { player: "", ai: "" };
   turn: Side = "player";
@@ -554,8 +641,18 @@ export class Battle {
   airSelection: AirKind | null = null;
   airTarget: number | null = null;
   supportStats = {
-    player: { helicopter: newStats(), bomber: newStats() },
-    ai: { helicopter: newStats(), bomber: newStats() },
+    player: {
+      helicopter: newStats(),
+      bomber: newStats(),
+      artillery: newStats(),
+      propeller: newStats(),
+    },
+    ai: {
+      helicopter: newStats(),
+      bomber: newStats(),
+      artillery: newStats(),
+      propeller: newStats(),
+    },
   };
   private airSequence = 0;
   private resumeAfterAir: Side | null = null;
@@ -566,9 +663,18 @@ export class Battle {
   constructor(
     public difficulty: Difficulty = "normal",
     public seed = Math.floor(Math.random() * 1e9),
+    public readonly config: BattleConfig = FREE_BATTLE,
   ) {
     this.random = seeded(seed);
     this.terrain = makeTerrain(this.random);
+    if (config.field !== "valley") {
+      const offset = { normandy: 0, france: 1, fortress: 2, frontier: 3 }[
+        config.field
+      ];
+      this.terrain = Float64Array.from(this.terrain, (y, x) =>
+        clamp(y + (offset + 1) * 8 * Math.sin(x / 140 + offset), 350, 570),
+      );
+    }
     this.originalTerrain = this.terrain.slice();
     this.tanks = [this.makeTank("player", 210), this.makeTank("ai", 1070)];
     this.wind = this.rollWind();
@@ -583,7 +689,7 @@ export class Battle {
       side,
       x,
       y: support(this.terrain, x),
-      hp: 100,
+      hp: clamp(this.config.initialHp?.[side] ?? 100, 1, 100),
       angle: 45,
       power: 55,
       tilt: 0,
@@ -591,13 +697,35 @@ export class Battle {
       hurt: 0,
       vx: 0,
       vy: 0,
-      ammo: { shell: Infinity, crater: 2, shock: 2, drone: 2, missile: 2 },
-      emp: 2,
-      repairs: 2,
-      shields: 2,
+      ammo: Object.fromEntries(
+        WEAPON_IDS.map((w) => [
+          w,
+          this.allowedWeapons.includes(w) ? (this.config.ammo[w] ?? 0) : 0,
+        ]),
+      ) as Record<WeaponId, number>,
+      emp: this.config.era === "modern" ? 2 : 0,
+      repairs: this.config.repairs,
+      shields: this.config.era === "modern" ? 2 : 0,
       shield: false,
       shieldRaw: 0,
-      support: { helicopter: 1, bomber: 1 },
+      support: Object.fromEntries(
+        (["helicopter", "bomber", "artillery", "propeller"] as AirKind[]).map(
+          (k) => [
+            k,
+            this.allowedSupports.includes(k) &&
+            (side === "player" ||
+              !this.config.enemySupports ||
+              this.config.enemySupports.includes(k))
+              ? 1
+              : 0,
+          ],
+        ),
+      ) as Record<AirKind, number>,
+      airRemaining: this.config.airBudget,
+      smoke: false,
+      cover: false,
+      smokes: this.config.smoke ? 2 : 0,
+      covers: this.config.cover ? 2 : 0,
     };
   }
   private rollWind() {
@@ -621,7 +749,14 @@ export class Battle {
   }
   canRepair(side: Side = "player") {
     const t = this.tankFor(side);
-    return this.canAct(side) && t.repairs > 0 && t.hp > 0 && t.hp < 100;
+    return (
+      this.canAct(side) &&
+      this.config.repairs > 0 &&
+      this.lastAction[side] !== "repair" &&
+      t.repairs > 0 &&
+      t.hp > 0 &&
+      t.hp < 100
+    );
   }
   repair(side: Side = "player"): boolean {
     if (!this.canRepair(side)) return false;
@@ -644,9 +779,42 @@ export class Battle {
     this.events.push({ type: "repair", x: t.x, y: t.y - 45, side, amount });
     return true;
   }
+  canFieldDefense(kind: "smoke" | "cover", side: Side = "player") {
+    const t = this.tankFor(side);
+    return (
+      this.config.era === "ww2" &&
+      this.config[kind] &&
+      this.canAct(side) &&
+      !t[kind] &&
+      t[kind === "smoke" ? "smokes" : "covers"] > 0
+    );
+  }
+  fieldDefense(kind: "smoke" | "cover", side: Side = "player") {
+    if (!this.canFieldDefense(kind, side)) return false;
+    const t = this.tankFor(side);
+    t[kind] = true;
+    t[kind === "smoke" ? "smokes" : "covers"]--;
+    this.actionCounts[side][kind]++;
+    this.lastAction[side] = kind;
+    this.phase = "resolve";
+    this.timer = 0.8;
+    return true;
+  }
+  isReaction(side: Side = "player") {
+    return (
+      this.turn !== side &&
+      ["flight", "deploy", "drone", "air"].includes(this.phase)
+    );
+  }
   canShield(side: Side = "player") {
     const t = this.tankFor(side);
-    return this.canAct(side) && t.shields > 0 && !t.shield;
+    return (
+      this.config.era === "modern" &&
+      !this.result &&
+      (this.canAct(side) || this.isReaction(side)) &&
+      t.shields > 0 &&
+      !t.shield
+    );
   }
   activateShield(side: Side = "player"): boolean {
     if (!this.canShield(side)) return false;
@@ -655,6 +823,10 @@ export class Battle {
     t.shield = true;
     t.shieldRaw = 0;
     this.actionCounts[side].shield++;
+    if (this.isReaction(side)) {
+      this.events.push({ type: "shield", x: t.x, y: t.y - 20, side });
+      return true;
+    }
     this.lastAction[side] = "shield";
     this.action = {
       kind: "shield",
@@ -671,7 +843,13 @@ export class Battle {
     return true;
   }
   canMove(direction: number, side: Side = "player") {
-    if (!this.canAct(side) || ![-1, 1].includes(direction)) return false;
+    if (
+      !this.config.movement ||
+      (side === "ai" && this.fortified) ||
+      !this.canAct(side) ||
+      ![-1, 1].includes(direction)
+    )
+      return false;
     const t = this.tankFor(side),
       other = side === "player" ? this.ai : this.player;
     return canTraverse(this.terrain, t.x, t.x + direction * 2, other.x);
@@ -698,6 +876,11 @@ export class Battle {
   canRequestAir(kind: AirKind, side: Side = "player") {
     return (
       this.canAct(side) &&
+      this.allowedSupports.includes(kind) &&
+      (side === "player" ||
+        !this.config.enemySupports ||
+        this.config.enemySupports.includes(kind)) &&
+      this.tankFor(side).airRemaining > 0 &&
       this.tankFor(side).support[kind] > 0 &&
       !this.pendingAir &&
       !this.air
@@ -719,6 +902,7 @@ export class Battle {
     if (!this.canRequestAir(kind, side) || !Number.isFinite(x)) return false;
     const t = this.tankFor(side);
     t.support[kind]--;
+    t.airRemaining--;
     this.actionCounts[side][kind]++;
     this.lastAction[side] = kind;
     this.pendingAir = {
@@ -739,6 +923,7 @@ export class Battle {
     const reserved = this.pendingAir!;
     this.pendingAir = null;
     this.air = makeOperation(reserved);
+    this.guardTime = this.config.era === "modern" ? 2.5 : 0;
     this.turn = reserved.owner;
     this.phase = "air";
     this.combat[reserved.owner].shots++;
@@ -803,6 +988,8 @@ export class Battle {
   }
   private expireShield(owner: Side) {
     const t = owner === "player" ? this.ai : this.player;
+    t.smoke = false;
+    t.cover = false;
     if (t.shield) {
       t.shield = false;
       t.shieldRaw = 0;
@@ -814,8 +1001,22 @@ export class Battle {
       });
     }
   }
-  private receiveDamage(t: Tank, raw: number, owner: Side): number {
+  private receiveDamage(
+    t: Tank,
+    raw: number,
+    owner: Side,
+    weapon?: WeaponId,
+  ): number {
     if (t.hp <= 0) return 0;
+    if (t.side !== owner) {
+      const armor =
+        t.side === "ai" ? (this.fortified ? 0.55 : this.config.armor) : 0;
+      raw = Math.round(
+        raw *
+          (weapon === "ap" ? 1 : 1 - armor) *
+          (t.cover ? (weapon === "ap" ? 0.85 : 0.65) : 1),
+      );
+    }
     const blocked = shieldDamage(
       raw,
       t.shieldRaw,
@@ -830,7 +1031,10 @@ export class Battle {
         side: t.side,
         amount: blocked.absorbed,
       });
-    return Math.min(t.hp, blocked.amount);
+    return Math.min(
+      t.side === "ai" && this.fortified ? Math.max(0, t.hp - 40) : t.hp,
+      blocked.amount,
+    );
   }
   aim(angle: number, power: number) {
     if (this.phase !== "aim") return;
@@ -838,7 +1042,11 @@ export class Battle {
     this.player.power = clamp(power, 20, 100);
   }
   select(weapon: WeaponId) {
-    if (this.phase === "aim" && this.player.ammo[weapon] > 0) {
+    if (
+      this.phase === "aim" &&
+      this.allowedWeapons.includes(weapon) &&
+      this.player.ammo[weapon] > 0
+    ) {
       if (weapon !== this.weapon) this.target = null;
       this.weapon = weapon;
       this.airSelection = null;
@@ -873,6 +1081,7 @@ export class Battle {
   }
   canEmp(side: Side): boolean {
     return (
+      this.config.era === "modern" &&
       this.phase === "deploy" &&
       !!this.defense &&
       this.defense.owner !== side &&
@@ -915,8 +1124,19 @@ export class Battle {
     );
   }
   private shoot(tank: Tank, weapon: WeaponId): boolean {
-    if (this.projectile || this.drone || tank.ammo[weapon] <= 0 || this.result)
+    if (
+      !this.allowedWeapons.includes(weapon) ||
+      this.projectile ||
+      this.drone ||
+      tank.ammo[weapon] <= 0 ||
+      this.result
+    )
       return false;
+    const enemy = tank.side === "player" ? this.ai : this.player;
+    if (enemy.smoke) {
+      tank.angle = clamp(tank.angle + (this.random() - 0.5) * 8, 10, 80);
+      tank.power = clamp(tank.power + (this.random() - 0.5) * 10, 20, 100);
+    }
     tank.ammo[weapon]--;
     this.turn = tank.side;
     this.lastAction[tank.side] = weapon;
@@ -972,6 +1192,7 @@ export class Battle {
     } else {
       this.phase = "flight";
       this.projectile = launch(tank, weapon);
+      this.guardTime = this.config.era === "modern" ? 2.5 : 0;
     }
     tank.recoil = 1;
     this.events.push({
@@ -1007,6 +1228,20 @@ export class Battle {
   private tick() {
     if (this.phase === "over") return;
     this.elapsed += STEP;
+    if (
+      this.canShield("ai") &&
+      this.isReaction("ai") &&
+      this.ai.hp <= 60 &&
+      this.round % 2 === 0
+    )
+      this.activateShield("ai");
+    if (
+      this.guardTime > 0 &&
+      (this.phase === "flight" || this.phase === "air")
+    ) {
+      this.guardTime = Math.max(0, this.guardTime - STEP);
+      return;
+    }
     for (const tank of this.tanks) {
       tank.recoil = Math.max(0, tank.recoil - STEP * 3.8);
       tank.hurt = Math.max(0, tank.hurt - STEP * 2);
@@ -1179,13 +1414,15 @@ export class Battle {
         const a = this.aiAction;
         this.aiAction = null;
         const ok =
-          a.kind === "repair"
-            ? this.repair("ai")
-            : a.kind === "shield"
-              ? this.activateShield("ai")
-              : a.kind === "move"
-                ? this.move(a.direction, "ai")
-                : this.requestAir(a.kind, a.targetX, "ai");
+          a.kind === "smoke" || a.kind === "cover"
+            ? this.fieldDefense(a.kind, "ai")
+            : a.kind === "repair"
+              ? this.repair("ai")
+              : a.kind === "shield"
+                ? this.activateShield("ai")
+                : a.kind === "move"
+                  ? this.move(a.direction, "ai")
+                  : this.requestAir(a.kind, a.targetX, "ai");
         if (!ok) this.shoot(this.ai, "shell");
       } else if (this.aiPlan) {
         this.ai.angle += (this.aiPlan.angle - this.ai.angle) * 6 * STEP;
@@ -1198,6 +1435,13 @@ export class Battle {
     }
   }
   private explode(hit: Impact, weapon: WeaponId, owner: Side) {
+    if (
+      this.config.fortified &&
+      owner === "player" &&
+      weapon === "ap" &&
+      hit.direct === "ai"
+    )
+      this.breachHits++;
     let enemyHit = false;
     for (const t of this.tanks) {
       const distance = Math.hypot(t.x - hit.x, t.y - 8 - hit.y),
@@ -1206,6 +1450,7 @@ export class Battle {
         t,
         blastDamage(distance, weapon, direct),
         owner,
+        weapon,
       );
       if (amount > 0) {
         t.hp -= amount;
@@ -1255,11 +1500,13 @@ export class Battle {
       (this.round >= 40 &&
       (this.turn === "ai" || this.resumeAfterAir !== null) &&
       !this.pendingAir
-        ? this.player.hp === this.ai.hp
-          ? "draw"
-          : this.player.hp > this.ai.hp
-            ? "victory"
-            : "defeat"
+        ? this.config.winCondition === "destroy"
+          ? "defeat"
+          : this.player.hp === this.ai.hp
+            ? "draw"
+            : this.player.hp > this.ai.hp
+              ? "victory"
+              : "defeat"
         : null);
     if (outcome) {
       this.phase = "over";
@@ -1275,6 +1522,7 @@ export class Battle {
       this.droneInput = { x: 0, y: 0 };
       this.result = {
         ...this.stats,
+        missionId: this.config.missionId,
         id: `${this.seed}-${Date.now()}`,
         outcome,
         hp: this.player.hp,
@@ -1304,13 +1552,24 @@ export class Battle {
       this.aiPlan = null;
       this.aiAction = chooseTactic(this);
       if (this.aiAction) return;
-      const tacticalWeapon = chooseArsenal(
+      let tacticalWeapon = chooseArsenal(
         this.ai,
         this.player,
         this.terrain,
         this.difficulty,
         this.random,
       );
+      if (this.config.era === "ww2")
+        tacticalWeapon =
+          this.ai.ammo.ap > 0 && this.round % 3 !== 0
+            ? "ap"
+            : this.ai.ammo.crater > 0 && this.round % 4 === 0
+              ? "crater"
+              : "shell";
+      if (this.config.openingDrone && this.round === 1)
+        tacticalWeapon = "drone";
+      if (!this.allowedWeapons.includes(tacticalWeapon))
+        tacticalWeapon = this.allowedWeapons[0];
       const plan = planAI(
         this.ai,
         this.player,

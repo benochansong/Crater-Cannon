@@ -1,4 +1,4 @@
-export const REPAIR_AMOUNT = 20;
+export const REPAIR_AMOUNT = 28;
 export const REPAIR_TIME = 1.6;
 export const SHIELD_FACTOR = 0.5;
 export function repairAmount(hp: number) {
