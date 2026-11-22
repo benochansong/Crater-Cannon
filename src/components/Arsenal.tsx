@@ -1,5 +1,67 @@
+import { useState } from "react";
+import { AIR } from "../game/airSupport";
+import type { AirKind } from "../game/airSupport";
 import { Battle, DRONE_TIME, WEAPONS } from "../game/engine";
 import type { WeaponId } from "../game/engine";
+export function TacticalIcon({
+  kind,
+}: {
+  kind: "repair" | "shield" | "move" | AirKind;
+}) {
+  const shapes = {
+    repair: (
+      <>
+        <path d="M10 6h20v28H10z" fill="#b6d693" />
+        <path d="M20 12v16M12 20h16" stroke="#38664a" strokeWidth="5" />
+      </>
+    ),
+    shield: (
+      <>
+        <path d="M20 4 34 10v10c0 9-14 16-14 16S6 29 6 20V10z" fill="#a4dfe5" />
+        <path
+          d="m13 19 5 5 10-12"
+          fill="none"
+          stroke="#337c9d"
+          strokeWidth="3"
+        />
+      </>
+    ),
+    move: (
+      <>
+        <rect x="6" y="17" width="28" height="13" rx="5" fill="#8baa84" />
+        <path
+          d="M3 12h34m-7-5 7 5-7 5M10 7l-7 5 7 5"
+          fill="none"
+          stroke="#48654c"
+          strokeWidth="3"
+        />
+      </>
+    ),
+    helicopter: (
+      <>
+        <path d="M5 23h8l7-9h13l4 9-4 6H17l-4-5H5z" fill="#679e94" />
+        <path
+          d="M12 9h26M24 9v7M3 17v12M15 33h20"
+          stroke="#344e49"
+          strokeWidth="2.5"
+        />
+      </>
+    ),
+    bomber: (
+      <path
+        d="m20 3 5 13 13 12-2 4-13-6-3 11-3-11-13 6-2-4 13-12z"
+        fill="#547787"
+        stroke="#30494c"
+        strokeWidth="1.5"
+      />
+    ),
+  };
+  return (
+    <svg viewBox="0 0 40 40" aria-hidden="true">
+      {shapes[kind]}
+    </svg>
+  );
+}
 export function AmmoIcon({ kind }: { kind: WeaponId | "emp" }) {
   if (kind === "emp")
     return (
@@ -104,6 +166,11 @@ interface Props {
   onEmp: () => void;
   onLock: () => void;
   onSteer: (x: number, y: number) => void;
+  onRepair: () => void;
+  onShield: () => void;
+  onMove: (direction: number) => void;
+  onAirSelect: (kind: AirKind) => void;
+  onAirTarget: (x: number) => void;
 }
 export function Arsenal({
   battle: b,
@@ -114,7 +181,15 @@ export function Arsenal({
   onEmp,
   onLock,
   onSteer,
+  onRepair,
+  onShield,
+  onMove,
+  onAirSelect,
+  onAirTarget,
 }: Props) {
+  const [category, setCategory] = useState<"attack" | "defense" | "air">(
+    "attack",
+  );
   const flying = b.phase === "drone" && b.turn === "player";
   const selected = WEAPONS[b.weapon];
   function group(ids: WeaponId[], name: string, start: number) {
@@ -148,37 +223,170 @@ export function Arsenal({
   }
   return (
     <section className="arsenal-panel" aria-label="포격 조작 패널">
-      <div className="arsenal-rack">
-        {group(["shell", "crater", "shock"], "포격 무기", 1)}
-        {group(["drone", "missile"], "현대전 무기", 4)}
-        <div className="arsenal-group defense-group">
-          <div className="control-label">방어 장비</div>
+      <div className="arsenal-navigation">
+        <div className="category-tabs" aria-label="행동 분류">
+          {(
+            [
+              ["attack", "공격 무기"],
+              ["defense", "방어 · 이동"],
+              ["air", "항공 지원"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              aria-pressed={category === id}
+              onClick={() => {
+                setCategory(id);
+                if (id !== "air") onSelect(b.weapon);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <button
+          className={"emp-always " + (b.canEmp("player") ? "available" : "")}
+          disabled={!b.canEmp("player")}
+          onClick={onEmp}
+          aria-label="EMP 방어"
+          title="반응 방어 · 턴 소비 없음 · 적 드론/유도탄 출격 중 E"
+        >
+          <AmmoIcon kind="emp" />
+          <span>
+            EMP <b>{b.player.emp}/2</b>
+            <small>반응 방어 · E · 턴 소비 없음</small>
+          </span>
+        </button>
+      </div>
+      {category === "attack" && (
+        <div className="arsenal-rack attack-rack">
+          {group(["shell", "crater", "shock"], "포격 무기", 1)}
+          {group(["drone", "missile"], "현대전 무기", 4)}
+        </div>
+      )}
+      {category === "defense" && (
+        <div className="tactic-grid">
           <button
-            className={`weapon emp-button ${b.canEmp("player") ? "available" : ""}`}
-            disabled={!b.canEmp("player")}
-            onClick={onEmp}
-            aria-label="EMP 방어"
+            className="tactic-card"
+            disabled={!ready || !b.canRepair()}
+            onClick={onRepair}
           >
-            <AmmoIcon kind="emp" />
+            <TacticalIcon kind="repair" />
             <span>
-              EMP<small>{b.player.emp}회 남음 · E</small>
+              <b>긴급 정비 · {b.player.repairs}/2</b>
+              <small>HP +20 · 최대 100 · 1턴</small>
+            </span>
+          </button>
+          <button
+            className="tactic-card"
+            disabled={!ready || !b.canShield()}
+            onClick={onShield}
+          >
+            <TacticalIcon kind="shield" />
+            <span>
+              <b>에너지 방어막 · {b.player.shields}/2</b>
+              <small>
+                {b.player.shield
+                  ? "방어막 유지 중"
+                  : "다음 적 공격 피해 50% 감소 · 1턴"}
+              </small>
+            </span>
+          </button>
+          <button
+            className="tactic-card"
+            disabled={!ready || !b.canMove(-1)}
+            onClick={() => onMove(-1)}
+          >
+            <TacticalIcon kind="move" />
+            <span>
+              <b>← 왼쪽 이동</b>
+              <small>최대 145 · 급경사 정지 · 1턴</small>
+            </span>
+          </button>
+          <button
+            className="tactic-card"
+            disabled={!ready || !b.canMove(1)}
+            onClick={() => onMove(1)}
+          >
+            <TacticalIcon kind="move" />
+            <span>
+              <b>오른쪽 이동 →</b>
+              <small>최대 145 · 급경사 정지 · 1턴</small>
             </span>
           </button>
         </div>
-      </div>
+      )}
+      {category === "air" && (
+        <div className="air-cards">
+          {(["helicopter", "bomber"] as const).map((kind) => (
+            <button
+              key={kind}
+              className={
+                "tactic-card " + (b.airSelection === kind ? "selected" : "")
+              }
+              disabled={!ready || !b.canRequestAir(kind)}
+              aria-pressed={b.airSelection === kind}
+              aria-label={AIR[kind].name + " 선택"}
+              onClick={() => onAirSelect(kind)}
+            >
+              <TacticalIcon kind={kind} />
+              <span>
+                <b>
+                  {AIR[kind].name} · {b.player.support[kind]}/1
+                </b>
+                <small>{AIR[kind].callSign} · 요청 1턴 / 상대 대응 1회</small>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="weapon-intel">
         <b>
-          {selected.name} · 직격 {selected.directDamage}
+          {b.airSelection
+            ? AIR[b.airSelection].name + " · 최대 " + AIR[b.airSelection].damage
+            : selected.name + " · 직격 " + selected.directDamage}
         </b>
-        <span>{selected.description}</span>
-        <span>{selected.counter}</span>
+        <span>
+          {b.airSelection
+            ? AIR[b.airSelection].description
+            : selected.description}
+        </span>
+        <span>
+          {b.airSelection ? "대응: 이동 · 방어막 (EMP 무효)" : selected.counter}
+        </span>
         <small>
           상대 EMP {b.ai.emp}/2 · 드론 {b.ai.ammo.drone} · 유도탄{" "}
           {b.ai.ammo.missile}
         </small>
       </div>
       <div className="fire-controls">
-        {flying ? (
+        {b.airSelection && ready ? (
+          <>
+            <div className="air-target-control">
+              <label htmlFor="air-target">
+                지원 구역{" "}
+                <b>
+                  {b.airTarget === null ? "미지정" : Math.round(b.airTarget)}
+                </b>
+              </label>
+              <input
+                id="air-target"
+                aria-label="항공 지원 목표 구역"
+                type="range"
+                min="35"
+                max="1245"
+                value={b.airTarget ?? 640}
+                onChange={(e) => onAirTarget(Number(e.target.value))}
+              />
+            </div>
+            <button
+              className="target-button"
+              onClick={() => onAirTarget(b.ai.x)}
+            >
+              적 위치에 구역 지정
+            </button>
+          </>
+        ) : flying ? (
           <>
             <div className="drone-clock">
               <b>
@@ -272,7 +480,9 @@ export function Arsenal({
           </>
         )}
         <div className="attack-context">
-          {b.weapon === "missile" && ready ? (
+          {b.airSelection ? (
+            <span>전장 클릭으로 구역 지정 · 상대 1회 행동 후 실행</span>
+          ) : b.weapon === "missile" && ready ? (
             <button
               className={`target-button ${b.target ? "locked" : ""}`}
               onClick={onLock}
@@ -296,20 +506,25 @@ export function Arsenal({
           disabled={
             !(
               flying ||
-              (ready && (b.weapon !== "missile" || b.target !== null))
+              (ready &&
+                (b.airSelection
+                  ? b.airTarget !== null && b.canRequestAir(b.airSelection)
+                  : b.weapon !== "missile" || b.target !== null))
             )
           }
           onClick={onFire}
         >
           <span className="crosshair">⊕</span>
           <strong>
-            {flying
-              ? "드론 공격"
-              : ready
-                ? b.weapon === "drone"
-                  ? "드론 출격"
-                  : "발사!"
-                : "대기 중"}
+            {b.airSelection && ready
+              ? "지원 요청"
+              : flying
+                ? "드론 공격"
+                : ready
+                  ? b.weapon === "drone"
+                    ? "드론 출격"
+                    : "발사!"
+                  : "대기 중"}
           </strong>
           <small>SPACE</small>
         </button>

@@ -6,6 +6,15 @@ export function attachQA(battle: Battle, renderer: Renderer) {
   target.__CRATER_QA__ = () => ({
     phase: battle.phase,
     turn: battle.turn,
+    action: battle.action ? { ...battle.action } : null,
+    pendingAir: battle.pendingAir ? { ...battle.pendingAir } : null,
+    air: battle.air
+      ? { ...battle.air, impacts: battle.air.impacts.map((p) => ({ ...p })) }
+      : null,
+    airSelection: battle.airSelection,
+    airTarget: battle.airTarget,
+    actions: structuredClone(battle.actionCounts),
+    supportStats: structuredClone(battle.supportStats),
     target: battle.target,
     drone: battle.drone
       ? {
@@ -30,7 +39,11 @@ export function attachQA(battle: Battle, renderer: Renderer) {
       },
     },
     terrain: Array.from(battle.terrain),
-    tanks: battle.tanks.map((t) => ({ ...t, ammo: { ...t.ammo } })),
+    tanks: battle.tanks.map((t) => ({
+      ...t,
+      ammo: { ...t.ammo },
+      support: { ...t.support },
+    })),
     wind: battle.wind,
     round: battle.round,
     stats: { ...battle.stats },

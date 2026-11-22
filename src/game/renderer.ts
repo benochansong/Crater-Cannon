@@ -1,3 +1,4 @@
+import { drawTactics } from "./tacticalRenderer";
 import { Camera } from "./camera";
 import {
   Battle,
@@ -29,6 +30,8 @@ interface Burst {
   direct: boolean;
 }
 interface Label {
+  blockSide?: string;
+  blocked?: number;
   x: number;
   y: number;
   age: number;
@@ -60,6 +63,54 @@ export class Renderer {
     return dt - held;
   }
   event(e: GameEvent) {
+    if (
+      ["repair", "shield", "block", "shield-end", "air-call"].includes(e.type)
+    ) {
+      const previous =
+        e.type === "block"
+          ? this.labels.find((l) => l.blockSide === e.side && l.age < 1.5)
+          : undefined;
+      if (previous) {
+        previous.blocked = (previous.blocked ?? 0) + (e.amount ?? 0);
+        previous.text = "SHIELD BLOCK · " + previous.blocked + " 흡수";
+        previous.age = 0;
+        previous.y = e.y - 20;
+      }
+      if (!previous)
+        this.labels.push({
+          blockSide: e.type === "block" ? e.side : undefined,
+          blocked: e.type === "block" ? e.amount : undefined,
+          x: e.x,
+          y: e.y - 15,
+          age: 0,
+          text:
+            e.type === "repair"
+              ? "+" + e.amount + " HP"
+              : e.type === "block"
+                ? "SHIELD BLOCK · " + e.amount + " 흡수"
+                : e.type === "shield"
+                  ? "SHIELD ON"
+                  : e.type === "shield-end"
+                    ? "방어막 종료"
+                    : "AIR SUPPORT",
+          direct: false,
+          color: e.type === "repair" ? "#c6ffad" : "#c6f4ff",
+        });
+      if (e.type === "block" || e.type === "shield-end")
+        this.pulses.push({ x: e.x, y: e.y + 35, age: 0 });
+      if (e.type === "repair")
+        for (let i = 0; i < 25; i++)
+          this.particle(
+            e.x,
+            e.y,
+            (Math.random() - 0.5) * 80,
+            -Math.random() * 80,
+            "#bbf192",
+            3,
+            1.5,
+            false,
+          );
+    }
     if (e.type === "emp") {
       this.pulses.push({ x: e.x, y: e.y, age: 0 });
       for (let i = 0; i < 36; i++) {
@@ -81,7 +132,10 @@ export class Renderer {
         x: e.x,
         y: e.y - 30,
         age: 0,
-        text: e.weapon === "drone" ? "DRONE OFF" : "추적 해제",
+        text:
+          e.weapon === "drone"
+            ? "전자전 성공 · DRONE OFF"
+            : "전자전 성공 · 추적 해제",
         direct: false,
         color: "#b6f4f4",
       });
@@ -223,7 +277,12 @@ export class Renderer {
     ctx.translate(this.camera.x, this.camera.y);
     ctx.scale(this.camera.scale, this.camera.scale);
     this.terrain(ctx, game);
-    if (game.phase === "aim" && !options.menu && game.weapon !== "drone")
+    if (
+      game.phase === "aim" &&
+      !options.menu &&
+      game.weapon !== "drone" &&
+      !game.airSelection
+    )
       this.guide(ctx, game);
     if (game.drone) this.drawDrone(ctx, game.drone);
     if (!options.menu && game.weapon === "missile" && game.phase === "aim") {
@@ -318,6 +377,7 @@ export class Renderer {
         );
       }
     }
+    if (!options.menu) drawTactics(ctx, game, this.time);
     this.effects(ctx, dt);
     ctx.restore();
     ctx.globalAlpha = 1;
@@ -866,7 +926,7 @@ export class Renderer {
       l.age += dt;
       ctx.globalAlpha = Math.min(1, (1.6 - l.age) * 2);
       ctx.textAlign = "center";
-      ctx.font = `900 ${l.direct ? 39 : 28}px sans-serif`;
+      ctx.font = `900 ${l.blockSide ? 21 : l.direct ? 39 : 28}px sans-serif`;
       ctx.lineWidth = 5;
       ctx.strokeStyle = "#263b38";
       ctx.fillStyle = l.color;

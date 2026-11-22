@@ -1,3 +1,4 @@
+import { AIR } from "./game/airSupport";
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Battle, WEAPONS, WEAPON_IDS, WIDTH, HEIGHT } from "./game/engine";
@@ -149,13 +150,31 @@ function App() {
   }
   function fire() {
     sound.unlock();
-    if (battle.phase === "drone" ? battle.attackDrone() : battle.fire()) {
+    if (
+      battle.airSelection
+        ? battle.airTarget !== null &&
+          battle.requestAir(battle.airSelection, battle.airTarget)
+        : battle.phase === "drone"
+          ? battle.attackDrone()
+          : battle.fire()
+    ) {
       finishTutorial();
       setTutorial(false);
       if (hint) {
         markWeaponHint(hint);
         setHint(null);
       }
+      canvas.current?.focus();
+      refresh((n) => n + 1);
+    }
+  }
+  function tactic(action: () => boolean) {
+    sound.unlock();
+    if (action()) {
+      finishTutorial();
+      setTutorial(false);
+      setHint(null);
+      held.current.clear();
       canvas.current?.focus();
       refresh((n) => n + 1);
     }
@@ -297,10 +316,11 @@ function App() {
   }, [battle]);
   useEffect(() => {
     if (paused) {
+      sound.stop();
       held.current.clear();
       battle.steerDrone(0, 0);
     }
-  }, [paused, battle]);
+  }, [paused, battle, sound]);
   function drag(event: React.PointerEvent<HTMLCanvasElement>) {
     if (!dragging.current || screen !== "battle" || paused) return;
     const rect = event.currentTarget.getBoundingClientRect();
@@ -308,6 +328,11 @@ function App() {
       x: ((event.clientX - rect.left) / rect.width) * WIDTH,
       y: ((event.clientY - rect.top) / rect.height) * HEIGHT,
     });
+    if (battle.airSelection) {
+      battle.setAirTarget(x);
+      refresh((n) => n + 1);
+      return;
+    }
     if (
       battle.weapon === "missile" &&
       Math.hypot(x - battle.ai.x, y - battle.ai.y) < 60
@@ -324,21 +349,29 @@ function App() {
   }
   const ready = screen === "battle" && battle.phase === "aim" && !paused;
   const status =
-    battle.phase === "deploy"
-      ? "전자 무기 출격 · EMP 대응 시간"
-      : battle.phase === "drone"
-        ? battle.turn === "player"
-          ? "WASD 이동 · Space 공격"
-          : "상대 드론 접근 중"
-        : battle.phase === "aim"
-          ? "조준하고, 전장을 바꾸세요"
-          : battle.phase === "ai-aim"
-            ? "상대가 조준하고 있습니다"
-            : battle.phase === "flight"
-              ? "포탄 비행 중"
-              : battle.phase === "over"
-                ? "대결 종료"
-                : "착탄 · 지형 변화 중";
+    battle.phase === "action"
+      ? battle.action?.kind === "repair"
+        ? "긴급 정비 중 · 체력 회복"
+        : battle.action?.kind === "shield"
+          ? "에너지 방어막 전개"
+          : "차량 이동 중"
+      : battle.phase === "air"
+        ? "항공 지원 작전 진행 중"
+        : battle.phase === "deploy"
+          ? "전자 무기 출격 · EMP 대응 시간"
+          : battle.phase === "drone"
+            ? battle.turn === "player"
+              ? "WASD 이동 · Space 공격"
+              : "상대 드론 접근 중"
+            : battle.phase === "aim"
+              ? "조준하고, 전장을 바꾸세요"
+              : battle.phase === "ai-aim"
+                ? "상대가 조준하고 있습니다"
+                : battle.phase === "flight"
+                  ? "포탄 비행 중"
+                  : battle.phase === "over"
+                    ? "대결 종료"
+                    : "착탄 · 지형 변화 중";
   const result = battle.result;
   const records = useMemo(
     () => (overlay === "records" ? loadRecords() : []),
@@ -353,7 +386,7 @@ function App() {
           aria-label="크레이터 캐논 메인 메뉴"
         >
           <span className="brand-icon">✦</span> CRATER CANNON{" "}
-          <span className="edition">MODERN ARSENAL</span>
+          <span className="edition">DEFENSE & AIR SUPPORT</span>
         </button>
         <div className="top-actions">
           <span className="local-badge">싱글 플레이 · 로컬 전투</span>
@@ -420,6 +453,22 @@ function App() {
                 · {(battle.defense?.remaining ?? 0).toFixed(1)}초
               </div>
             )}
+          {battle.pendingAir && screen === "battle" && (
+            <div className="air-warning" role="status">
+              <b>
+                {AIR[battle.pendingAir.kind].callSign} ·{" "}
+                {battle.pendingAir.owner === "ai"
+                  ? "적 항공 지원 예고"
+                  : "아군 지원 예약"}
+              </b>
+              <span>
+                {battle.pendingAir.responseStarted
+                  ? "대응 행동 1회 후 실행"
+                  : "상대에게 대응 행동 1회 제공"}{" "}
+                · 표시 구역을 피하거나 방어막을 사용하세요
+              </span>
+            </div>
+          )}
           {hint && screen === "battle" && (
             <div className="weapon-hint">
               <span>
@@ -516,7 +565,7 @@ function App() {
                 </div>
               </div>
               <div
-                className={`turn-banner ${battle.phase === "flight" || battle.phase === "resolve" ? "in-flight" : ""} ${battle.turn === "ai" ? "enemy-turn" : ""}`}
+                className={`turn-banner ${battle.phase === "flight" || battle.phase === "resolve" || battle.phase === "air" ? "in-flight" : ""} ${battle.turn === "ai" ? "enemy-turn" : ""}`}
                 role="status"
               >
                 <b>{battle.turn === "player" ? "내 차례" : "상대 차례"}</b>
@@ -553,10 +602,11 @@ function App() {
             <span>
               <b>03</b> 전장을 바꾸세요
             </span>
-            <small>2D 포격 대전 · 지형 파괴 · 5종의 공격 · EMP 방어</small>
+            <small>포격 · 긴급 정비 · 방어막 · 항공 지원</small>
           </div>
         ) : (
           <Arsenal
+            key={battle.seed}
             battle={battle}
             ready={ready}
             onSelect={select}
@@ -565,6 +615,17 @@ function App() {
             onEmp={emp}
             onLock={lock}
             onSteer={(x, y) => battle.steerDrone(x, y)}
+            onRepair={() => tactic(() => battle.repair())}
+            onShield={() => tactic(() => battle.activateShield())}
+            onMove={(direction) => tactic(() => battle.move(direction))}
+            onAirSelect={(kind) => {
+              battle.selectAir(kind);
+              refresh((n) => n + 1);
+            }}
+            onAirTarget={(x) => {
+              battle.setAirTarget(x);
+              refresh((n) => n + 1);
+            }}
           />
         )}
       </section>
@@ -572,7 +633,7 @@ function App() {
         <span>한 발의 포탄이 전장의 운명을 바꾼다.</span>
         <div>
           <button onClick={() => setOverlay("help")}>조작 안내</button>
-          <span>PHASE 3 / MODERN ARSENAL</span>
+          <span>PHASE 4 / DEFENSE & AIR SUPPORT</span>
         </div>
       </footer>
       {screen === "result" && result && (
@@ -588,7 +649,11 @@ function App() {
                   ? "◇"
                   : "✧"}
             </div>
-            <small>전투 종료 · GREEN VALLEY</small>
+            <small>
+              {result.hp > 0 && result.enemyHp > 0
+                ? "라운드 한도 · 남은 HP 판정"
+                : "전투 종료 · GREEN VALLEY"}
+            </small>
             <h2 id="result-title">
               {result.outcome === "victory"
                 ? "VICTORY!"
@@ -597,11 +662,13 @@ function App() {
                   : "DRAW"}
             </h2>
             <p>
-              {result.outcome === "victory"
-                ? "정확한 한 발, 멋진 승리입니다."
-                : result.outcome === "defeat"
-                  ? "다음 한 발은 전장을 바꿀 수 있어요."
-                  : "동시 격파! 두 차량이 함께 쓰러졌습니다."}
+              {result.hp > 0 && result.enemyHp > 0
+                ? "40라운드 종료. 남은 체력으로 승부를 판정했습니다."
+                : result.outcome === "victory"
+                  ? "정확한 한 발, 멋진 승리입니다."
+                  : result.outcome === "defeat"
+                    ? "다음 한 발은 전장을 바꿀 수 있어요."
+                    : "동시 격파! 두 차량이 함께 쓰러졌습니다."}
             </p>
             <div className="result-stats">
               <div>
@@ -703,7 +770,7 @@ function App() {
                 />
               </label>
               <small className="muted">
-                전자 위협 감지 0.9초 후 자동 사용 · 경기당 2회
+                전자 위협 감지 0.9초 후 자동 사용 · 경기당 2회 · 대응 창 4초
               </small>
               <label className="setting-row">
                 효과음 음소거
@@ -756,6 +823,14 @@ function App() {
             <>
               <small className="eyebrow">HOW TO PLAY</small>
               <h2>한 발에 담는 전략</h2>
+              <p className="modern-help">
+                방어 · 이동에서 HP +20 긴급 정비, 다음 적 공격 피해 50% 감소
+                방어막, 최대 145 이동을 선택합니다. 각각 공격 턴을 소비합니다.
+                항공 지원에서 헬기 또는 폭격기를 선택하고 전장이나 슬라이더로
+                구역을 지정하세요. 상대에게 행동 1회 후 지원이 실행됩니다. EMP는
+                적 드론/유도탄 출격 중 4초 안에 E로 사용하며 항공 지원에는
+                적용되지 않습니다. 최대 40라운드에서 남은 HP로 판정합니다.
+              </p>
               <div className="help-steps">
                 <p>
                   <b>01 · 각도 조절</b>

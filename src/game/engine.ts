@@ -1,3 +1,9 @@
+import { chooseTactic } from "./tactics";
+import type { TacticalAction } from "./tactics";
+import { AIR, airDamage, makeOperation } from "./airSupport";
+import type { AirKind, AirReservation, AirOperation } from "./airSupport";
+import { canTraverse, MOVE_DISTANCE, MOVE_SPEED } from "./movement";
+import { repairAmount, REPAIR_TIME, shieldDamage } from "./defense";
 export const WIDTH = 1280;
 export const HEIGHT = 640;
 export const STEP = 1 / 120;
@@ -11,11 +17,19 @@ export const WEAPON_IDS: WeaponId[] = [
   "drone",
   "missile",
 ];
-export const EMP_WINDOW = 2.4;
+export const EMP_WINDOW = 4;
 export const DRONE_TIME = 5;
 export type Difficulty = "easy" | "normal" | "hard";
 export type Phase =
-  "aim" | "flight" | "deploy" | "drone" | "resolve" | "ai-aim" | "over";
+  | "aim"
+  | "flight"
+  | "deploy"
+  | "drone"
+  | "resolve"
+  | "ai-aim"
+  | "action"
+  | "air"
+  | "over";
 export type Outcome = "victory" | "defeat" | "draw";
 export interface Vec {
   x: number;
@@ -119,6 +133,11 @@ export interface Tank extends Vec {
   vx: number;
   ammo: Record<WeaponId, number>;
   emp: number;
+  repairs: number;
+  shields: number;
+  shield: boolean;
+  shieldRaw: number;
+  support: { helicopter: number; bomber: number };
 }
 export interface Projectile extends Vec {
   vx: number;
@@ -178,13 +197,21 @@ export interface GameEvent extends Vec {
     | "end"
     | "emp"
     | "disabled"
-    | "threat";
+    | "threat"
+    | "repair"
+    | "shield"
+    | "block"
+    | "shield-end"
+    | "move"
+    | "air-call"
+    | "air-enter";
   angle?: number;
   weapon?: WeaponId;
   side?: Side;
   direct?: boolean;
   amount?: number;
   outcome?: Outcome;
+  airKind?: AirKind;
 }
 export const clamp = (n: number, lo: number, hi: number) =>
   Math.max(lo, Math.min(hi, n));
@@ -483,6 +510,21 @@ export class Battle {
   originalTerrain: Float64Array;
   tanks: [Tank, Tank];
   phase: Phase = "aim";
+  action: {
+    kind: "repair" | "shield" | "move";
+    owner: Side;
+    age: number;
+    duration: number;
+    startHp: number;
+    amount: number;
+    direction: number;
+    distance: number;
+  } | null = null;
+  actionCounts = {
+    player: { repair: 0, shield: 0, move: 0, helicopter: 0, bomber: 0 },
+    ai: { repair: 0, shield: 0, move: 0, helicopter: 0, bomber: 0 },
+  };
+  lastAction: Record<Side, string> = { player: "", ai: "" };
   turn: Side = "player";
   round = 1;
   wind = 0;
@@ -507,8 +549,19 @@ export class Battle {
   events: GameEvent[] = [];
   terrainRevision = 0;
   timer = 0;
+  pendingAir: AirReservation | null = null;
+  air: AirOperation | null = null;
+  airSelection: AirKind | null = null;
+  airTarget: number | null = null;
+  supportStats = {
+    player: { helicopter: newStats(), bomber: newStats() },
+    ai: { helicopter: newStats(), bomber: newStats() },
+  };
+  private airSequence = 0;
+  private resumeAfterAir: Side | null = null;
   private accumulator = 0;
   private aiPlan: ShotPlan | null = null;
+  private aiAction: TacticalAction | null = null;
   readonly random: () => number;
   constructor(
     public difficulty: Difficulty = "normal",
@@ -540,6 +593,11 @@ export class Battle {
       vy: 0,
       ammo: { shell: Infinity, crater: 2, shock: 2, drone: 2, missile: 2 },
       emp: 2,
+      repairs: 2,
+      shields: 2,
+      shield: false,
+      shieldRaw: 0,
+      support: { helicopter: 1, bomber: 1 },
     };
   }
   private rollWind() {
@@ -551,6 +609,229 @@ export class Battle {
   get ai() {
     return this.tanks[1];
   }
+  private tankFor(side: Side) {
+    return side === "player" ? this.player : this.ai;
+  }
+  private canAct(side: Side) {
+    return (
+      !this.result &&
+      this.turn === side &&
+      this.phase === (side === "player" ? "aim" : "ai-aim")
+    );
+  }
+  canRepair(side: Side = "player") {
+    const t = this.tankFor(side);
+    return this.canAct(side) && t.repairs > 0 && t.hp > 0 && t.hp < 100;
+  }
+  repair(side: Side = "player"): boolean {
+    if (!this.canRepair(side)) return false;
+    const t = this.tankFor(side),
+      amount = repairAmount(t.hp);
+    t.repairs--;
+    this.actionCounts[side].repair++;
+    this.lastAction[side] = "repair";
+    this.action = {
+      kind: "repair",
+      owner: side,
+      age: 0,
+      duration: REPAIR_TIME,
+      startHp: t.hp,
+      amount,
+      direction: 0,
+      distance: 0,
+    };
+    this.phase = "action";
+    this.events.push({ type: "repair", x: t.x, y: t.y - 45, side, amount });
+    return true;
+  }
+  canShield(side: Side = "player") {
+    const t = this.tankFor(side);
+    return this.canAct(side) && t.shields > 0 && !t.shield;
+  }
+  activateShield(side: Side = "player"): boolean {
+    if (!this.canShield(side)) return false;
+    const t = this.tankFor(side);
+    t.shields--;
+    t.shield = true;
+    t.shieldRaw = 0;
+    this.actionCounts[side].shield++;
+    this.lastAction[side] = "shield";
+    this.action = {
+      kind: "shield",
+      owner: side,
+      age: 0,
+      duration: 0.75,
+      startHp: t.hp,
+      amount: 0,
+      direction: 0,
+      distance: 0,
+    };
+    this.phase = "action";
+    this.events.push({ type: "shield", x: t.x, y: t.y - 20, side });
+    return true;
+  }
+  canMove(direction: number, side: Side = "player") {
+    if (!this.canAct(side) || ![-1, 1].includes(direction)) return false;
+    const t = this.tankFor(side),
+      other = side === "player" ? this.ai : this.player;
+    return canTraverse(this.terrain, t.x, t.x + direction * 2, other.x);
+  }
+  move(direction: number, side: Side = "player"): boolean {
+    if (!this.canMove(direction, side)) return false;
+    const t = this.tankFor(side);
+    this.actionCounts[side].move++;
+    this.lastAction[side] = "move";
+    this.action = {
+      kind: "move",
+      owner: side,
+      age: 0,
+      duration: MOVE_DISTANCE / MOVE_SPEED + 0.1,
+      startHp: t.hp,
+      amount: 0,
+      direction,
+      distance: 0,
+    };
+    this.phase = "action";
+    this.events.push({ type: "move", x: t.x, y: t.y, side });
+    return true;
+  }
+  canRequestAir(kind: AirKind, side: Side = "player") {
+    return (
+      this.canAct(side) &&
+      this.tankFor(side).support[kind] > 0 &&
+      !this.pendingAir &&
+      !this.air
+    );
+  }
+  selectAir(kind: AirKind) {
+    if (!this.canRequestAir(kind)) return false;
+    this.airSelection = kind;
+    this.airTarget = null;
+    return true;
+  }
+  setAirTarget(x: number) {
+    if (this.phase !== "aim" || !this.airSelection || !Number.isFinite(x))
+      return false;
+    this.airTarget = clamp(x, 35, WIDTH - 35);
+    return true;
+  }
+  requestAir(kind: AirKind, x: number, side: Side = "player"): boolean {
+    if (!this.canRequestAir(kind, side) || !Number.isFinite(x)) return false;
+    const t = this.tankFor(side);
+    t.support[kind]--;
+    this.actionCounts[side][kind]++;
+    this.lastAction[side] = kind;
+    this.pendingAir = {
+      id: ++this.airSequence,
+      kind,
+      owner: side,
+      targetX: clamp(x, 35, WIDTH - 35),
+      responseStarted: false,
+    };
+    this.airSelection = null;
+    this.airTarget = null;
+    this.events.push({ type: "air-call", x, y: 100, side, airKind: kind });
+    this.phase = "resolve";
+    this.timer = 0.6;
+    return true;
+  }
+  private beginAir() {
+    const reserved = this.pendingAir!;
+    this.pendingAir = null;
+    this.air = makeOperation(reserved);
+    this.turn = reserved.owner;
+    this.phase = "air";
+    this.combat[reserved.owner].shots++;
+    this.supportStats[reserved.owner][reserved.kind].shots++;
+    this.events.push({
+      type: "air-enter",
+      x: reserved.targetX,
+      y: 120,
+      side: reserved.owner,
+      airKind: reserved.kind,
+    });
+  }
+  private airImpact(index: number) {
+    const a = this.air!,
+      point = a.impacts[index];
+    if (point.done) return;
+    point.done = true;
+    const y = ground(this.terrain, point.x),
+      weapon = a.kind === "helicopter" ? "drone" : "crater";
+    // Bomber damage is one area calculation; its three ground craters never triple the 30 HP cap.
+    if (a.kind === "helicopter" || index === 1) {
+      for (const t of this.tanks) {
+        const distance = Math.abs(
+          t.x - (a.kind === "helicopter" ? point.x : a.targetX),
+        );
+        const amount = this.receiveDamage(
+          t,
+          airDamage(a.kind, distance),
+          a.owner,
+        );
+        if (!amount) continue;
+        t.hp -= amount;
+        t.hurt = 0.7;
+        this.events.push({
+          type: "damage",
+          x: t.x,
+          y: t.y - 45,
+          amount,
+          side: t.side,
+          weapon,
+        });
+        if (t.side !== a.owner) {
+          this.combat[a.owner].damage += amount;
+          this.supportStats[a.owner][a.kind].damage += amount;
+          if (!a.enemyHit) {
+            a.enemyHit = true;
+            this.combat[a.owner].hits++;
+            this.supportStats[a.owner][a.kind].hits++;
+          }
+        }
+      }
+    }
+    carve(this.terrain, point.x, y, weapon);
+    this.terrainRevision++;
+    this.events.push({
+      type: "explosion",
+      x: point.x,
+      y,
+      weapon,
+      airKind: a.kind,
+    });
+  }
+  private expireShield(owner: Side) {
+    const t = owner === "player" ? this.ai : this.player;
+    if (t.shield) {
+      t.shield = false;
+      t.shieldRaw = 0;
+      this.events.push({
+        type: "shield-end",
+        x: t.x,
+        y: t.y - 20,
+        side: t.side,
+      });
+    }
+  }
+  private receiveDamage(t: Tank, raw: number, owner: Side): number {
+    if (t.hp <= 0) return 0;
+    const blocked = shieldDamage(
+      raw,
+      t.shieldRaw,
+      t.shield && t.side !== owner,
+    );
+    if (t.shield && t.side !== owner) t.shieldRaw = blocked.total;
+    if (blocked.absorbed > 0)
+      this.events.push({
+        type: "block",
+        x: t.x,
+        y: t.y - 70,
+        side: t.side,
+        amount: blocked.absorbed,
+      });
+    return Math.min(t.hp, blocked.amount);
+  }
   aim(angle: number, power: number) {
     if (this.phase !== "aim") return;
     this.player.angle = clamp(angle, 10, 80);
@@ -560,6 +841,8 @@ export class Battle {
     if (this.phase === "aim" && this.player.ammo[weapon] > 0) {
       if (weapon !== this.weapon) this.target = null;
       this.weapon = weapon;
+      this.airSelection = null;
+      this.airTarget = null;
     }
   }
   lockTarget(side: Side): boolean {
@@ -636,6 +919,7 @@ export class Battle {
       return false;
     tank.ammo[weapon]--;
     this.turn = tank.side;
+    this.lastAction[tank.side] = weapon;
     this.combat[tank.side].shots++;
     this.telemetry[tank.side][weapon].shots++;
     this.droneInput = { x: 0, y: 0 };
@@ -708,6 +992,7 @@ export class Battle {
     this.defense = null;
     this.droneInput = { x: 0, y: 0 };
     if (hit && !hit.escaped) this.explode(hit, weapon, owner);
+    this.expireShield(owner);
     this.phase = "resolve";
     this.timer = hit && !hit.escaped ? 0.85 : 0.4;
   }
@@ -746,7 +1031,45 @@ export class Battle {
         0.3,
       );
     }
-    if (this.phase === "deploy" && this.defense) {
+    if (this.phase === "action" && this.action) {
+      const a = this.action,
+        t = this.tankFor(a.owner);
+      a.age += STEP;
+      if (a.kind === "repair")
+        t.hp =
+          a.startHp + Math.round(a.amount * Math.min(1, a.age / a.duration));
+      if (a.kind === "move") {
+        const step = Math.min(MOVE_SPEED * STEP, MOVE_DISTANCE - a.distance);
+        const other = a.owner === "player" ? this.ai : this.player;
+        if (
+          step > 0 &&
+          canTraverse(this.terrain, t.x, t.x + a.direction * step, other.x)
+        ) {
+          t.x += a.direction * step;
+          a.distance += step;
+          // The suspension follows existing ground support, never a teleport to a destination.
+          t.y = Math.min(t.y, support(this.terrain, t.x));
+        } else a.age = a.duration;
+      }
+      if (a.age >= a.duration) {
+        this.action = null;
+        this.phase = "resolve";
+        this.timer = 0.25;
+      }
+    } else if (this.phase === "air" && this.air) {
+      const a = this.air;
+      a.age += STEP;
+      a.impacts.forEach((p, i) => {
+        if (!p.done && a.age >= p.time) this.airImpact(i);
+      });
+      if (a.age >= AIR[a.kind].duration) {
+        this.expireShield(a.owner);
+        this.air = null;
+        this.resumeAfterAir = a.owner;
+        this.phase = "resolve";
+        this.timer = 0.6;
+      }
+    } else if (this.phase === "deploy" && this.defense) {
       const defense = this.defense;
       defense.remaining = Math.max(0, defense.remaining - STEP);
       if (this.drone) {
@@ -852,7 +1175,19 @@ export class Battle {
         this.nextTurn();
     } else if (this.phase === "ai-aim") {
       this.timer -= STEP;
-      if (this.aiPlan) {
+      if (this.aiAction && this.timer <= 0) {
+        const a = this.aiAction;
+        this.aiAction = null;
+        const ok =
+          a.kind === "repair"
+            ? this.repair("ai")
+            : a.kind === "shield"
+              ? this.activateShield("ai")
+              : a.kind === "move"
+                ? this.move(a.direction, "ai")
+                : this.requestAir(a.kind, a.targetX, "ai");
+        if (!ok) this.shoot(this.ai, "shell");
+      } else if (this.aiPlan) {
         this.ai.angle += (this.aiPlan.angle - this.ai.angle) * 6 * STEP;
         if (this.timer <= 0) {
           this.ai.angle = this.aiPlan.angle;
@@ -867,7 +1202,11 @@ export class Battle {
     for (const t of this.tanks) {
       const distance = Math.hypot(t.x - hit.x, t.y - 8 - hit.y),
         direct = hit.direct === t.side;
-      const amount = Math.min(t.hp, blastDamage(distance, weapon, direct));
+      const amount = this.receiveDamage(
+        t,
+        blastDamage(distance, weapon, direct),
+        owner,
+      );
       if (amount > 0) {
         t.hp -= amount;
         t.hurt = direct ? 1.4 : 0.7;
@@ -911,9 +1250,29 @@ export class Battle {
     });
   }
   private nextTurn() {
-    const outcome = judge(this.player.hp, this.ai.hp);
+    const outcome =
+      judge(this.player.hp, this.ai.hp) ??
+      (this.round >= 40 &&
+      (this.turn === "ai" || this.resumeAfterAir !== null) &&
+      !this.pendingAir
+        ? this.player.hp === this.ai.hp
+          ? "draw"
+          : this.player.hp > this.ai.hp
+            ? "victory"
+            : "defeat"
+        : null);
     if (outcome) {
       this.phase = "over";
+      this.pendingAir = null;
+      this.air = null;
+      this.action = null;
+      this.defense = null;
+      this.projectile = null;
+      this.drone = null;
+      this.airSelection = null;
+      this.airTarget = null;
+      this.resumeAfterAir = null;
+      this.droneInput = { x: 0, y: 0 };
       this.result = {
         ...this.stats,
         id: `${this.seed}-${Date.now()}`,
@@ -927,10 +1286,24 @@ export class Battle {
       this.events.push({ type: "end", x: WIDTH / 2, y: HEIGHT / 2, outcome });
       return;
     }
-    if (this.turn === "player") {
+    if (
+      this.pendingAir?.responseStarted &&
+      this.turn !== this.pendingAir.owner
+    ) {
+      this.beginAir();
+      return;
+    }
+    if (this.pendingAir) this.pendingAir.responseStarted = true;
+    const next =
+      this.resumeAfterAir ?? (this.turn === "player" ? "ai" : "player");
+    this.resumeAfterAir = null;
+    if (next === "ai") {
       this.turn = "ai";
       this.phase = "ai-aim";
       this.timer = 0.8;
+      this.aiPlan = null;
+      this.aiAction = chooseTactic(this);
+      if (this.aiAction) return;
       const tacticalWeapon = chooseArsenal(
         this.ai,
         this.player,
@@ -952,7 +1325,7 @@ export class Battle {
     } else {
       this.turn = "player";
       this.phase = "aim";
-      this.round++;
+      this.round = Math.min(40, this.round + 1);
       const oldWind = this.wind;
       this.wind = this.rollWind();
       if (this.wind !== oldWind)

@@ -94,6 +94,34 @@ export class Sound {
   }
   event(e: GameEvent) {
     try {
+      if (e.type === "repair") {
+        this.tone(440, 880, 0.3, "sine", 0, 0.15);
+        this.tone(660, 990, 0.3, "sine", 0.5, 0.15);
+        this.noise(0.7, 1800, 0.1);
+      }
+      if (e.type === "shield") {
+        this.tone(160, 800, 0.6, "sine", 0, 0.3);
+        this.tone(400, 1000, 0.4, "triangle", 0.2, 0.15);
+      }
+      if (e.type === "block") {
+        this.tone(1000, 200, 0.2, "triangle", 0, 0.35);
+        this.noise(0.2, 2800, 0.2);
+      }
+      if (e.type === "shield-end") this.tone(600, 100, 0.35, "sine", 0, 0.1);
+      if (e.type === "move") this.noise(0.8, 380, 0.15);
+      if (e.type === "air-call") {
+        this.tone(650, 650, 0.1, "sine", 0, 0.2);
+        this.tone(850, 850, 0.15, "sine", 0.15, 0.2);
+      }
+      if (e.type === "air-enter") {
+        if (e.airKind === "helicopter")
+          for (let i = 0; i < 22; i++)
+            this.tone(65, 42, 0.12, "triangle", i * 0.18, 0.18);
+        else {
+          this.noise(2.5, 450, 0.3);
+          this.tone(70, 40, 3, "sawtooth", 0, 0.12);
+        }
+      }
       if (e.type === "emp") {
         this.noise(0.35, 3500, 0.35);
         this.tone(1100, 120, 0.45, "sine", 0, 0.4);

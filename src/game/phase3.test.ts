@@ -48,7 +48,7 @@ describe("directly controlled drone", () => {
     run(b, 2.1);
     expect(b.phase).toBe("deploy");
     expect(b.drone!.age).toBe(0);
-    run(b, 0.31);
+    run(b, EMP_WINDOW - 2.1 + 0.01);
     expect(b.phase).toBe("drone");
   });
   it("moves continuously with input while tanks stay still, and locks other attacks", () => {
@@ -196,7 +196,7 @@ describe("fair EMP reaction", () => {
     enemyAttack(c, "missile");
     run(c, 2);
     expect(c.canEmp("player")).toBe(true);
-    run(c, 0.5);
+    run(c, EMP_WINDOW - 2 + 0.1);
     expect(c.canEmp("player")).toBe(false);
     expect(c.useEmp("player")).toBe(false);
   });
