@@ -1,41 +1,285 @@
-import { describe, it, expect } from 'vitest';
-import { Battle, STEP, WIDTH, HEIGHT, advance, blastDamage, carve, ground, judge, launch, makeTerrain, muzzle, seeded, solveShot, support } from './engine';
-import type { Projectile, WeaponId } from './engine';
+import { describe, it, expect } from "vitest";
+import {
+  Battle,
+  STEP,
+  WIDTH,
+  HEIGHT,
+  advance,
+  blastDamage,
+  carve,
+  ground,
+  judge,
+  launch,
+  makeTerrain,
+  muzzle,
+  seeded,
+  solveShot,
+  support,
+} from "./engine";
+import type { Projectile, WeaponId } from "./engine";
 const flat = () => new Float64Array(WIDTH + 1).fill(500);
 function endpoint(angle: number, power: number, wind = 0) {
-  const b = new Battle('normal', 1); const p = launch({ ...b.player, x: 100, y: 483, angle, power }, 'shell');
+  const b = new Battle("normal", 1);
+  const p = launch({ ...b.player, x: 100, y: 483, angle, power }, "shell");
   let peak = p.y;
-  for (let i = 0; i < 1500; i++) { const hit = advance(p, flat(), [], wind); peak = Math.min(peak, p.y); if (hit) return { ...hit, peak }; }
-  throw Error('Projectile never terminated');
+  for (let i = 0; i < 1500; i++) {
+    const hit = advance(p, flat(), [], wind);
+    peak = Math.min(peak, p.y);
+    if (hit) return { ...hit, peak };
+  }
+  throw Error("Projectile never terminated");
 }
 function forceImpact(b: Battle, weapon: WeaponId, x = b.ai.x, y = b.ai.y - 8) {
-  b.fire(); b.projectile = { x, y, vx: 0, vy: 1, age: 0.5, owner: 'player', weapon, trail: [] }; b.update(STEP);
+  b.fire();
+  b.projectile = {
+    x,
+    y,
+    vx: 0,
+    vy: 1,
+    age: 0.5,
+    owner: "player",
+    weapon,
+    trail: [],
+  };
+  b.update(STEP);
 }
-function until(b: Battle, predicate: () => boolean, limit = 3000) { for (let i = 0; i < limit && !predicate(); i++) b.update(1 / 60); expect(predicate()).toBe(true); }
-describe('ballistics', () => {
-  it('launches exactly along the rendered barrel from its muzzle', () => { const b = new Battle(); for (const tank of b.tanks) { const p = launch(tank, 'shell'); expect(p.x).toBe(muzzle(tank).x); expect(p.y).toBe(muzzle(tank).y); expect(Math.atan2(-p.vy, Math.abs(p.vx)) * 180 / Math.PI).toBeCloseTo(tank.angle); } });
-  it('higher power travels farther and higher angle rises higher', () => { expect(endpoint(40, 50).x).toBeGreaterThan(endpoint(40, 30).x); expect(endpoint(70, 40).peak).toBeLessThan(endpoint(30, 40).peak); });
-  it('wind changes horizontal travel in its signed direction', () => { expect(endpoint(50, 40, 5).x).toBeGreaterThan(endpoint(50, 40, 0).x); expect(endpoint(50, 40, -5).x).toBeLessThan(endpoint(50, 40, 0).x); });
-  it('is independent of display frame rate', () => { const a = new Battle('normal', 22), b = new Battle('normal', 22); a.aim(75, 100); b.aim(75, 100); a.fire(); b.fire(); for (let i = 0; i < 30; i++) a.update(1 / 30); for (let i = 0; i < 144; i++) b.update(1 / 144); expect(a.projectile!.x).toBeCloseTo(b.projectile!.x, 8); expect(a.projectile!.y).toBeCloseTo(b.projectile!.y, 8); });
-  it('sweeps fast projectiles through narrow terrain obstacles', () => { const t = flat(); t[600] = 100; const p: Projectile = { x: 550, y: 200, vx: 10000, vy: 0, age: 0, owner: 'player', weapon: 'shell', trail: [] }; const hit = advance(p, t, [], 0); expect(hit?.escaped).toBe(false); expect(hit?.x).toBeLessThan(603); });
-  it('distinguishes vehicle from terrain collisions', () => { const b = new Battle(); const p: Projectile = { x: b.ai.x - 50, y: b.ai.y - 10, vx: 10000, vy: 0, age: 1, owner: 'player', weapon: 'shell', trail: [] }; expect(advance(p, b.terrain, b.tanks, 0)?.direct).toBe('ai'); const q = { ...p, x: 400, y: 499, vx: 0, vy: 400 }; expect(advance(q, flat(), [], 0)?.direct).toBeNull(); });
-  it('terminates escaped and overlong flights', () => { const p: Projectile = { x: WIDTH + 49, y: 0, vx: 200, vy: 0, age: 0, owner: 'player', weapon: 'shell', trail: [] }; expect(advance(p, flat(), [], 0)?.escaped).toBe(true); p.x = 400; p.age = 12; expect(advance(p, flat(), [], 0)?.escaped).toBe(true); });
+function until(b: Battle, predicate: () => boolean, limit = 3000) {
+  for (let i = 0; i < limit && !predicate(); i++) b.update(1 / 60);
+  expect(predicate()).toBe(true);
+}
+describe("ballistics", () => {
+  it("launches exactly along the rendered barrel from its muzzle", () => {
+    const b = new Battle();
+    for (const tank of b.tanks) {
+      const p = launch(tank, "shell");
+      expect(p.x).toBe(muzzle(tank).x);
+      expect(p.y).toBe(muzzle(tank).y);
+      expect((Math.atan2(-p.vy, Math.abs(p.vx)) * 180) / Math.PI).toBeCloseTo(
+        tank.angle,
+      );
+    }
+  });
+  it("higher power travels farther and higher angle rises higher", () => {
+    expect(endpoint(40, 50).x).toBeGreaterThan(endpoint(40, 30).x);
+    expect(endpoint(70, 40).peak).toBeLessThan(endpoint(30, 40).peak);
+  });
+  it("wind changes horizontal travel in its signed direction", () => {
+    expect(endpoint(50, 40, 5).x).toBeGreaterThan(endpoint(50, 40, 0).x);
+    expect(endpoint(50, 40, -5).x).toBeLessThan(endpoint(50, 40, 0).x);
+  });
+  it("is independent of display frame rate", () => {
+    const a = new Battle("normal", 22),
+      b = new Battle("normal", 22);
+    a.aim(75, 100);
+    b.aim(75, 100);
+    a.fire();
+    b.fire();
+    for (let i = 0; i < 30; i++) a.update(1 / 30);
+    for (let i = 0; i < 144; i++) b.update(1 / 144);
+    expect(a.projectile!.x).toBeCloseTo(b.projectile!.x, 8);
+    expect(a.projectile!.y).toBeCloseTo(b.projectile!.y, 8);
+  });
+  it("sweeps fast projectiles through narrow terrain obstacles", () => {
+    const t = flat();
+    t[600] = 100;
+    const p: Projectile = {
+      x: 550,
+      y: 200,
+      vx: 10000,
+      vy: 0,
+      age: 0,
+      owner: "player",
+      weapon: "shell",
+      trail: [],
+    };
+    const hit = advance(p, t, [], 0);
+    expect(hit?.escaped).toBe(false);
+    expect(hit?.x).toBeLessThan(603);
+  });
+  it("distinguishes vehicle from terrain collisions", () => {
+    const b = new Battle();
+    const p: Projectile = {
+      x: b.ai.x - 50,
+      y: b.ai.y - 10,
+      vx: 10000,
+      vy: 0,
+      age: 1,
+      owner: "player",
+      weapon: "shell",
+      trail: [],
+    };
+    expect(advance(p, b.terrain, b.tanks, 0)?.direct).toBe("ai");
+    const q = { ...p, x: 400, y: 499, vx: 0, vy: 400 };
+    expect(advance(q, flat(), [], 0)?.direct).toBeNull();
+  });
+  it("terminates escaped and overlong flights", () => {
+    const p: Projectile = {
+      x: WIDTH + 49,
+      y: 0,
+      vx: 200,
+      vy: 0,
+      age: 0,
+      owner: "player",
+      weapon: "shell",
+      trail: [],
+    };
+    expect(advance(p, flat(), [], 0)?.escaped).toBe(true);
+    p.x = 400;
+    p.age = 12;
+    expect(advance(p, flat(), [], 0)?.escaped).toBe(true);
+  });
 });
-describe('terrain and weapons', () => {
-  it('generates deterministic varied valleys', () => { expect(makeTerrain(seeded(12))).toEqual(makeTerrain(seeded(12))); expect(makeTerrain(seeded(12))).not.toEqual(makeTerrain(seeded(13))); });
-  it('creates deeper craters with repeated impact, bounded above bedrock', () => { const t = flat(); carve(t, 600, ground(t, 600), 'crater'); const first = t[600]; carve(t, 600, ground(t, 600), 'crater'); expect(t[600]).toBeGreaterThan(first); for (let i = 0; i < 20; i++) carve(t, 600, ground(t, 600), 'crater'); expect(t.every(y => Number.isFinite(y) && y <= HEIGHT - 22)).toBe(true); });
-  it('differentiates destruction radius and damage', () => { const a = flat(), b = flat(), c = flat(); const shell = carve(a, 600, 500, 'shell'), crater = carve(b, 600, 500, 'crater'), shock = carve(c, 600, 500, 'shock'); expect(crater).toBeGreaterThan(shell * 2); expect(shell).toBeGreaterThan(shock * 2); expect(blastDamage(0, 'shell', true)).toBeGreaterThan(blastDamage(0, 'crater', true)); });
-  it('uses monotonic splash falloff with no damage outside range', () => { expect(blastDamage(25, 'shell')).toBeGreaterThan(blastDamage(65, 'shell')); expect(blastDamage(120, 'shell')).toBe(0); });
-  it('settles tanks onto changed terrain without penetration', () => { const b = new Battle(); const previous = b.ai.y; carve(b.terrain, b.ai.x, ground(b.terrain, b.ai.x), 'crater'); for (let i = 0; i < 150; i++) b.update(1 / 60); expect(b.ai.y).toBeGreaterThan(previous); expect(b.ai.y).toBeCloseTo(support(b.terrain, b.ai.x)); for (let dx = -21; dx <= 21; dx += 3) expect(b.ai.y + 17).toBeLessThanOrEqual(ground(b.terrain, b.ai.x + dx) + 0.001); });
-  it('shock pushes vehicles and settles them at their new position', () => { const b = new Battle(); const x = b.ai.x; forceImpact(b, 'shock', x - 8); until(b, () => b.phase === 'ai-aim'); expect(b.ai.x).toBeGreaterThan(x + 30); expect(b.ai.x).toBeLessThanOrEqual(WIDTH - 34); expect(b.ai.y).toBeCloseTo(support(b.terrain, b.ai.x), 0); });
+describe("terrain and weapons", () => {
+  it("generates deterministic varied valleys", () => {
+    expect(makeTerrain(seeded(12))).toEqual(makeTerrain(seeded(12)));
+    expect(makeTerrain(seeded(12))).not.toEqual(makeTerrain(seeded(13)));
+  });
+  it("creates deeper craters with repeated impact, bounded above bedrock", () => {
+    const t = flat();
+    carve(t, 600, ground(t, 600), "crater");
+    const first = t[600];
+    carve(t, 600, ground(t, 600), "crater");
+    expect(t[600]).toBeGreaterThan(first);
+    for (let i = 0; i < 20; i++) carve(t, 600, ground(t, 600), "crater");
+    expect(t.every((y) => Number.isFinite(y) && y <= HEIGHT - 22)).toBe(true);
+  });
+  it("differentiates destruction radius and damage", () => {
+    const a = flat(),
+      b = flat(),
+      c = flat();
+    const shell = carve(a, 600, 500, "shell"),
+      crater = carve(b, 600, 500, "crater"),
+      shock = carve(c, 600, 500, "shock");
+    expect(crater).toBeGreaterThan(shell * 2);
+    expect(shell).toBeGreaterThan(shock * 2);
+    expect(blastDamage(0, "shell", true)).toBeGreaterThan(
+      blastDamage(0, "crater", true),
+    );
+  });
+  it("uses monotonic splash falloff with no damage outside range", () => {
+    expect(blastDamage(25, "shell")).toBeGreaterThan(blastDamage(65, "shell"));
+    expect(blastDamage(120, "shell")).toBe(0);
+  });
+  it("settles tanks onto changed terrain without penetration", () => {
+    const b = new Battle();
+    const previous = b.ai.y;
+    carve(b.terrain, b.ai.x, ground(b.terrain, b.ai.x), "crater");
+    for (let i = 0; i < 150; i++) b.update(1 / 60);
+    expect(b.ai.y).toBeGreaterThan(previous);
+    expect(b.ai.y).toBeCloseTo(support(b.terrain, b.ai.x));
+    for (let dx = -21; dx <= 21; dx += 3)
+      expect(b.ai.y + 17).toBeLessThanOrEqual(
+        ground(b.terrain, b.ai.x + dx) + 0.001,
+      );
+  });
+  it("shock pushes vehicles and settles them at their new position", () => {
+    const b = new Battle();
+    const x = b.ai.x;
+    forceImpact(b, "shock", x - 8);
+    until(b, () => b.phase === "ai-aim");
+    expect(b.ai.x).toBeGreaterThan(x + 30);
+    expect(b.ai.x).toBeLessThanOrEqual(WIDTH - 34);
+    expect(b.ai.y).toBeCloseTo(support(b.terrain, b.ai.x), 0);
+  });
 });
-describe('battle lifecycle', () => {
-  it('locks repeated firing and aim during flight', () => { const b = new Battle(); expect(b.fire()).toBe(true); expect(b.fire()).toBe(false); b.aim(80, 100); expect(b.player.angle).toBe(45); expect(b.stats.shots).toBe(1); });
-  it('limits special ammo to two shots and preserves unlimited shells', () => { const b = new Battle(); b.select('crater'); b.fire(); expect(b.player.ammo.crater).toBe(1); b.projectile = null; b.phase = 'aim'; b.fire(); expect(b.player.ammo.crater).toBe(0); b.projectile = null; b.phase = 'aim'; expect(b.fire()).toBe(false); b.select('shell'); expect(b.fire()).toBe(true); expect(b.player.ammo.shell).toBe(Infinity); });
-  it('applies one explosion and records actual damage exactly once', () => { const b = new Battle(); b.ai.hp = 10; forceImpact(b, 'shell'); for (let i = 0; i < 20; i++) b.update(STEP); expect(b.ai.hp).toBe(0); expect(b.stats.damage).toBe(10); expect(b.stats.direct).toBe(1); expect(b.events.filter(e => e.type === 'explosion')).toHaveLength(1); });
-  it('alternates real AI shots and changes wind only after both turns', () => { const b = new Battle('easy', 7); const wind = b.wind; b.fire(); until(b, () => b.phase === 'ai-aim'); expect(b.wind).toBe(wind); until(b, () => b.phase === 'flight'); expect(b.projectile?.owner).toBe('ai'); until(b, () => b.phase === 'aim'); expect(b.round).toBe(2); expect(b.wind).toBeGreaterThanOrEqual(-5); expect(b.wind).toBeLessThanOrEqual(5); });
-  it('defines win, loss and simultaneous knockout', () => { expect(judge(1, 0)).toBe('victory'); expect(judge(0, 1)).toBe('defeat'); expect(judge(0, 0)).toBe('draw'); expect(judge(1, 1)).toBeNull(); });
-  it('finishes with correct result and fresh restart state', () => { const b = new Battle(); b.ai.hp = 1; forceImpact(b, 'shell'); until(b, () => b.phase === 'over'); expect(b.result?.outcome).toBe('victory'); expect(b.fire()).toBe(false); const next = new Battle(); expect(next.player.hp).toBe(100); expect(next.ai.hp).toBe(100); expect(next.stats.shots).toBe(0); expect(next.terrainRevision).toBe(0); expect(next.player.ammo.crater).toBe(2); expect(next.projectile).toBeNull(); });
-  it('AI planning hits using the exact production trajectory', () => { const b = new Battle('hard', 19); const shot = solveShot(b.ai, b.player, b.terrain, b.wind); const p = launch({ ...b.ai, ...shot }, 'shell'); let hit = null; for (let i = 0; i < 1441 && !hit; i++) hit = advance(p, b.terrain, b.tanks, b.wind); expect(hit).not.toBeNull(); expect(Math.hypot(hit!.x - b.player.x, hit!.y - b.player.y)).toBeLessThan(60); });
-  it.each(['easy', 'normal', 'hard'] as const)('completes a full %s battle via real shots', difficulty => { const b = new Battle(difficulty, 321); for (let i = 0; i < 30000 && !b.result; i++) { if (b.phase === 'aim') { const plan = solveShot(b.player, b.ai, b.terrain, b.wind); b.aim(plan.angle, plan.power); b.fire(); } b.update(1 / 30); b.drainEvents(); } expect(b.result).not.toBeNull(); expect(b.result!.shots).toBeGreaterThan(0); expect(b.result!.damage).toBeGreaterThan(0); }, 20000);
+describe("battle lifecycle", () => {
+  it("locks repeated firing and aim during flight", () => {
+    const b = new Battle();
+    expect(b.fire()).toBe(true);
+    expect(b.fire()).toBe(false);
+    b.aim(80, 100);
+    expect(b.player.angle).toBe(45);
+    expect(b.stats.shots).toBe(1);
+  });
+  it("limits special ammo to two shots and preserves unlimited shells", () => {
+    const b = new Battle();
+    b.select("crater");
+    b.fire();
+    expect(b.player.ammo.crater).toBe(1);
+    b.projectile = null;
+    b.phase = "aim";
+    b.fire();
+    expect(b.player.ammo.crater).toBe(0);
+    b.projectile = null;
+    b.phase = "aim";
+    expect(b.fire()).toBe(false);
+    b.select("shell");
+    expect(b.fire()).toBe(true);
+    expect(b.player.ammo.shell).toBe(Infinity);
+  });
+  it("applies one explosion and records actual damage exactly once", () => {
+    const b = new Battle();
+    b.ai.hp = 10;
+    forceImpact(b, "shell");
+    for (let i = 0; i < 20; i++) b.update(STEP);
+    expect(b.ai.hp).toBe(0);
+    expect(b.stats.damage).toBe(10);
+    expect(b.stats.direct).toBe(1);
+    expect(b.events.filter((e) => e.type === "explosion")).toHaveLength(1);
+  });
+  it("alternates real AI shots and changes wind only after both turns", () => {
+    const b = new Battle("easy", 7);
+    const wind = b.wind;
+    b.fire();
+    until(b, () => b.phase === "ai-aim");
+    expect(b.wind).toBe(wind);
+    until(b, () => b.phase === "flight");
+    expect(b.projectile?.owner).toBe("ai");
+    until(b, () => b.phase === "aim");
+    expect(b.round).toBe(2);
+    expect(b.wind).toBeGreaterThanOrEqual(-5);
+    expect(b.wind).toBeLessThanOrEqual(5);
+  });
+  it("defines win, loss and simultaneous knockout", () => {
+    expect(judge(1, 0)).toBe("victory");
+    expect(judge(0, 1)).toBe("defeat");
+    expect(judge(0, 0)).toBe("draw");
+    expect(judge(1, 1)).toBeNull();
+  });
+  it("finishes with correct result and fresh restart state", () => {
+    const b = new Battle();
+    b.ai.hp = 1;
+    forceImpact(b, "shell");
+    until(b, () => b.phase === "over");
+    expect(b.result?.outcome).toBe("victory");
+    expect(b.fire()).toBe(false);
+    const next = new Battle();
+    expect(next.player.hp).toBe(100);
+    expect(next.ai.hp).toBe(100);
+    expect(next.stats.shots).toBe(0);
+    expect(next.terrainRevision).toBe(0);
+    expect(next.player.ammo.crater).toBe(2);
+    expect(next.projectile).toBeNull();
+  });
+  it("AI planning hits using the exact production trajectory", () => {
+    const b = new Battle("hard", 19);
+    const shot = solveShot(b.ai, b.player, b.terrain, b.wind);
+    const p = launch({ ...b.ai, ...shot }, "shell");
+    let hit = null;
+    for (let i = 0; i < 1441 && !hit; i++)
+      hit = advance(p, b.terrain, b.tanks, b.wind);
+    expect(hit).not.toBeNull();
+    expect(Math.hypot(hit!.x - b.player.x, hit!.y - b.player.y)).toBeLessThan(
+      60,
+    );
+  });
+  it.each(["easy", "normal", "hard"] as const)(
+    "completes a full %s battle via real shots",
+    (difficulty) => {
+      const b = new Battle(difficulty, 321);
+      for (let i = 0; i < 30000 && !b.result; i++) {
+        if (b.phase === "aim") {
+          const plan = solveShot(b.player, b.ai, b.terrain, b.wind);
+          b.aim(plan.angle, plan.power);
+          b.fire();
+        }
+        b.update(1 / 30);
+        b.drainEvents();
+      }
+      expect(b.result).not.toBeNull();
+      expect(b.result!.shots).toBeGreaterThan(0);
+      expect(b.result!.damage).toBeGreaterThan(0);
+    },
+    20000,
+  );
 });
