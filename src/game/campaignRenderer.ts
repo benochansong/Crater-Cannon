@@ -26,6 +26,26 @@ export function drawCampaignBackground(c: CanvasRenderingContext2D, b: Battle) {
     c.lineTo(1280, 640);
     c.fill();
   }
+  if (b.config.field === "signal" || b.config.field === "radar") {
+    c.fillStyle = b.config.field === "radar" ? "#4b5b65" : "#3e6663";
+    for (let i = 0; i < 9; i++) {
+      const x = i * 160;
+      c.beginPath();
+      c.moveTo(x - 100, 410);
+      c.lineTo(x + 30, 170 + (i % 3) * 30);
+      c.lineTo(x + 190, 410);
+      c.fill();
+    }
+    c.strokeStyle = "#79928a";
+    c.lineWidth = 4;
+    for (let x = 30; x < 1280; x += 85) {
+      c.beginPath();
+      c.moveTo(x, 375);
+      c.lineTo(x + 45, 355);
+      c.lineTo(x + 65, 382);
+      c.stroke();
+    }
+  }
   for (let i = 0; i < 14; i++) {
     const x = i * 103 - 20,
       y = 285 + Math.sin(i * 2.3) * 24;

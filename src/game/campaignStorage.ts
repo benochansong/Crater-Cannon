@@ -1,3 +1,4 @@
+import { missionSucceeded } from "./objectives";
 import { MISSIONS } from "./campaign";
 import type { BattleResult } from "./engine";
 export const CAMPAIGN_KEY = "crater.campaign.v1";
@@ -33,9 +34,10 @@ export function normalizeProgress(value: unknown): CampaignProgress {
     if (!Array.isArray(v.completed) || !v.completed.includes(m.id)) break;
     p.completed.push(m.id);
   }
-  p.unlocked = MISSIONS.slice(0, Math.min(4, p.completed.length + 1)).map(
-    (m) => m.id,
-  );
+  p.unlocked = MISSIONS.slice(
+    0,
+    Math.min(MISSIONS.length, p.completed.length + 1),
+  ).map((m) => m.id);
   for (const id of p.completed) {
     const grade = v.grades?.[id];
     p.grades[id] = grade === "S" || grade === "A" ? grade : "B";
@@ -68,14 +70,36 @@ export function saveCampaign(p: CampaignProgress) {
     return false;
   }
 }
-export const missionGrade = (r: BattleResult): Grade =>
-  r.hp >= 65 && r.shots <= 12 ? "S" : r.hp >= 30 ? "A" : "B";
+export const missionGrade = (r: BattleResult): Grade => {
+  const o = r.objective;
+  if (o?.type === "defend")
+    return o.hp >= 50 &&
+      r.hp >= 60 &&
+      (o.reinforcement === 0 || o.restored >= 12) &&
+      o.completedRounds <= 6
+      ? "S"
+      : o.hp >= 25 && r.hp >= 30
+        ? "A"
+        : "B";
+  if (o?.type === "destroy-objective")
+    return o.hp <= 0 && (r.round ?? 99) <= 5 && r.hp >= 60 && r.shots <= 6
+      ? "S"
+      : o.hp <= 0 && (r.round ?? 99) <= 7 && r.hp >= 30
+        ? "A"
+        : "B";
+  return r.hp >= 65 && r.shots <= 12 ? "S" : r.hp >= 30 ? "A" : "B";
+};
 export function completeMission(
   p: CampaignProgress,
   id: string,
   r: BattleResult,
 ): CampaignProgress {
-  if (r.outcome !== "victory" || r.enemyHp > 0 || !p.unlocked.includes(id))
+  const mission = MISSIONS.find((m) => m.id === id);
+  if (
+    !mission ||
+    !missionSucceeded(mission.config, r) ||
+    !p.unlocked.includes(id)
+  )
     return p;
   const grade = missionGrade(r),
     rank = { S: 3, A: 2, B: 1 },

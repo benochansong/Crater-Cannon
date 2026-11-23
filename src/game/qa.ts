@@ -5,6 +5,12 @@ export function attachQA(battle: Battle, renderer: Renderer) {
   const target = window as unknown as { __CRATER_QA__?: () => unknown };
   target.__CRATER_QA__ = () => ({
     config: structuredClone(battle.config),
+    facility: battle.facility ? { ...battle.facility } : null,
+    objective: battle.objectiveRecord,
+    completedRounds: battle.completedRounds,
+    aiAttackTarget: battle.aiAttackTarget,
+    selectedTarget: battle.selectedTarget,
+    canReinforce: battle.canReinforce(),
     breachProgress: battle.breachProgress,
     fortified: battle.fortified,
     guardTime: battle.guardTime,

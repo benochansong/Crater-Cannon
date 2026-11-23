@@ -1,3 +1,11 @@
+import { createFacility, facilityY, objectiveVerdict } from "./objectives";
+import type {
+  CollisionTarget,
+  TargetId,
+  Facility,
+  ObjectiveRecord,
+  MissionReason,
+} from "./objectives";
 import { FREE_BATTLE, ERA_WEAPONS, ERA_SUPPORTS } from "./eras";
 import type { BattleConfig, Era } from "./eras";
 import { chooseTactic } from "./tactics";
@@ -5,7 +13,6 @@ import type { TacticalAction } from "./tactics";
 import { AIR, airDamage, makeOperation } from "./airSupport";
 import type { AirKind, AirReservation, AirOperation } from "./airSupport";
 import {
-  canTraverse,
   traverseBlock,
   reachable,
   SHORT_DISTANCE,
@@ -206,7 +213,7 @@ export interface Projectile extends Vec {
   owner: Side;
   weapon: WeaponId;
   trail: Vec[];
-  target?: Side;
+  target?: TargetId;
   guided?: boolean;
   flightAge?: number;
 }
@@ -230,7 +237,7 @@ export interface AimMemory {
   lastMiss: number | null;
 }
 export interface Impact extends Vec {
-  direct: Side | null;
+  direct: TargetId | null;
   escaped: boolean;
 }
 export interface Stats {
@@ -240,6 +247,9 @@ export interface Stats {
   damage: number;
 }
 export interface BattleResult extends Stats {
+  objective?: ObjectiveRecord;
+  reason?: MissionReason;
+  round?: number;
   missionId?: string;
   id: string;
   outcome: Outcome;
@@ -250,6 +260,7 @@ export interface BattleResult extends Stats {
   date: string;
 }
 export interface GameEvent extends Vec {
+  facility?: boolean;
   type:
     | "shot"
     | "explosion"
@@ -353,11 +364,18 @@ export function launch(tank: Tank, weapon: WeaponId): Projectile {
     trail: [],
   };
 }
+export function hitsTarget(p: Vec, t: CollisionTarget) {
+  return (
+    ((p.x - t.x) / (t.width ? t.width / 2 : 29)) ** 2 +
+      ((p.y - (t.y - 8)) / (t.height ? t.height / 2 : 23)) ** 2 <=
+    1
+  );
+}
 // Sweep vehicle samples and every terrain-column boundary, including single-pixel ridges.
 export function advance(
   p: Projectile,
   terrain: Float64Array,
-  tanks: Tank[],
+  tanks: CollisionTarget[],
   wind: number,
   dt = STEP,
   gravity = GRAVITY,
@@ -391,7 +409,7 @@ export function advance(
       return { x: p.x, y: p.y, direct: null, escaped: true };
     for (const t of tanks) {
       if (t.hp <= 0 || (t.side === p.owner && p.age < 0.15)) continue;
-      if (((p.x - t.x) / 29) ** 2 + ((p.y - (t.y - 8)) / 23) ** 2 <= 1)
+      if (hitsTarget(p, t))
         return { x: p.x, y: p.y, direct: t.side, escaped: false };
     }
     if (p.x >= 0 && p.x <= WIDTH && p.y >= ground(terrain, p.x))
@@ -422,9 +440,10 @@ export interface ShotPlan {
 }
 export function solveShot(
   tank: Tank,
-  target: Tank,
+  target: CollisionTarget,
   terrain: Float64Array,
   wind: number,
+  obstacles: CollisionTarget[] = [],
 ): ShotPlan {
   let best = { angle: 45, power: 55, weapon: "shell" as WeaponId },
     score = Infinity;
@@ -433,7 +452,7 @@ export function solveShot(
       const p = launch({ ...tank, angle, power }, "shell");
       let hit: Impact | null = null;
       for (let n = 0; n < 1441 && !hit; n++)
-        hit = advance(p, terrain, [tank, target], wind);
+        hit = advance(p, terrain, [tank, target, ...obstacles], wind);
       if (!hit || hit.escaped) continue;
       const d =
         Math.hypot(hit.x - target.x, hit.y - target.y) -
@@ -496,15 +515,16 @@ export const AI_PROFILE = {
 };
 export function planAI(
   tank: Tank,
-  target: Tank,
+  target: CollisionTarget,
   terrain: Float64Array,
   wind: number,
   difficulty: Difficulty,
   memory: AimMemory,
   random: () => number,
+  obstacles: CollisionTarget[] = [],
 ): ShotPlan {
   const p = AI_PROFILE[difficulty];
-  const plan = solveShot(tank, target, terrain, wind);
+  const plan = solveShot(tank, target, terrain, wind, obstacles);
   // The estimate improves from observed landing error; the next wind is never sampled here.
   if (memory.lastMiss !== null)
     memory.bias = clamp(memory.bias + memory.lastMiss * p.correction, -24, 24);
@@ -539,13 +559,13 @@ export function chooseArsenal(
 export function advanceMissile(
   p: Projectile,
   terrain: Float64Array,
-  tanks: Tank[],
+  tanks: CollisionTarget[],
   wind: number,
   dt = STEP,
 ): Impact | null {
   p.flightAge = (p.flightAge ?? 0) + dt;
   if (!p.guided) return advance(p, terrain, tanks, wind, dt);
-  const target = tanks.find((t) => t.side === p.target);
+  const target = tanks.find((t) => t.side === p.target && t.hp > 0);
   if (target && p.flightAge <= 3.2) {
     const heading = Math.atan2(p.vy, p.vx),
       wanted = Math.atan2(target.y - 8 - p.y, target.x - p.x);
@@ -567,6 +587,111 @@ const weaponStats = () =>
     Stats
   >;
 export class Battle {
+  facility: Facility | null = null;
+  completedRounds = 0;
+  reinforcement = 1;
+  restoredFacilityHp = 0;
+  aiAttackTarget: TargetId = "player";
+  facilityAimMemory: AimMemory = { bias: 0, shots: 0, lastMiss: null };
+  selectedTarget: TargetId = "ai";
+  get collisionTargets(): CollisionTarget[] {
+    return this.facility ? [...this.tanks, this.facility] : this.tanks;
+  }
+  get aiTargetBody(): CollisionTarget {
+    return this.aiAttackTarget === "objective" && this.facility?.hp
+      ? this.facility
+      : this.player;
+  }
+  get targetBody(): CollisionTarget {
+    return this.selectedTarget === "objective" && this.facility
+      ? this.facility
+      : this.selectedTarget === "player"
+        ? this.player
+        : this.ai;
+  }
+  get objectiveRecord(): ObjectiveRecord | undefined {
+    const c = this.config.objective,
+      f = this.facility;
+    return c && f
+      ? {
+          type: c.type,
+          hp: f.hp,
+          maxHp: f.maxHp,
+          completedRounds: this.completedRounds,
+          reinforcement: 1 - this.reinforcement,
+          restored: this.restoredFacilityHp,
+        }
+      : undefined;
+  }
+  chooseTarget(id: TargetId) {
+    const target = this.collisionTargets.find((t) => t.side === id && t.hp > 0);
+    if (!target || this.phase !== "aim") return false;
+    this.selectedTarget = id;
+    if (this.weapon === "missile") {
+      this.target = null;
+      this.lockTarget(id);
+    }
+    if (
+      this.airSelection &&
+      (id === "ai" || (id === "objective" && this.facility?.owner === "ai"))
+    )
+      this.setAirTarget(target.x);
+    return true;
+  }
+  canReinforce() {
+    return (
+      this.config.objective?.type === "defend" &&
+      !!this.facility &&
+      this.facility.hp > 0 &&
+      this.facility.hp < this.facility.maxHp &&
+      this.reinforcement > 0 &&
+      this.canAct("player") &&
+      !this.player.mobility.input
+    );
+  }
+  reinforce() {
+    if (!this.canReinforce() || !this.facility) return false;
+    const f = this.facility,
+      amount = Math.min(15, f.maxHp - f.hp);
+    f.hp += amount;
+    this.restoredFacilityHp += amount;
+    this.reinforcement--;
+    this.lastAction.player = "reinforce";
+    this.events.push({
+      type: "repair",
+      x: f.x,
+      y: f.y - 40,
+      amount,
+      facility: true,
+      side: "player",
+    });
+    this.phase = "resolve";
+    this.timer = 1;
+    return true;
+  }
+  private damageFacility(raw: number, owner: Side, weapon?: WeaponId) {
+    const f = this.facility;
+    if (!f || f.hp <= 0) return 0;
+    const amount = Math.min(f.hp, Math.max(0, Math.round(raw)));
+    if (!amount) return 0;
+    f.hp -= amount;
+    f.hurt = 1;
+    this.events.push({
+      type: "damage",
+      x: f.x,
+      y: f.y - 55,
+      amount,
+      side: f.owner,
+      weapon,
+      facility: true,
+    });
+    if (f.owner !== owner) {
+      this.combat[owner].damage += amount;
+      if (weapon) this.telemetry[owner][weapon].damage += amount;
+    }
+    return amount;
+  }
+
   guardTime = 0;
   breachHits = 0;
   get allowedWeapons() {
@@ -639,7 +764,7 @@ export class Battle {
   defenses = { player: 0, ai: 0 };
   drone: Drone | null = null;
   defense: Defense | null = null;
-  target: Side | null = null;
+  target: TargetId | null = null;
   droneInput: Vec = { x: 0, y: 0 };
   autoEmp = false;
   aiMemory: AimMemory;
@@ -687,22 +812,35 @@ export class Battle {
     this.random = seeded(seed);
     this.terrain = makeTerrain(this.random);
     if (config.field !== "valley") {
-      const offset = { normandy: 0, france: 1, fortress: 2, frontier: 3 }[
-        config.field
-      ];
+      const offset = {
+        normandy: 0,
+        france: 1,
+        fortress: 2,
+        frontier: 3,
+        signal: 4,
+        radar: 5,
+      }[config.field];
       this.terrain = Float64Array.from(this.terrain, (y, x) =>
         clamp(y + (offset + 1) * 8 * Math.sin(x / 140 + offset), 350, 570),
       );
     }
     this.originalTerrain = this.terrain.slice();
     this.mobilityRandom = seeded(this.seed ^ 0x763831);
-    this.tanks = [this.makeTank("player", 210), this.makeTank("ai", 1070)];
+    this.tanks = [
+      this.makeTank("player", config.spawns?.player ?? 210),
+      this.makeTank("ai", config.spawns?.ai ?? 1070),
+    ];
+    if (config.objective)
+      this.facility = createFacility(config.objective, this.terrain);
+    if (config.objective?.type === "destroy-objective")
+      this.selectedTarget = "objective";
     this.wind = this.rollWind();
     this.aiMemory = {
       bias: (this.random() < 0.5 ? -1 : 1) * AI_PROFILE[difficulty].initialBias,
       shots: 0,
       lastMiss: null,
     };
+    this.facilityAimMemory = { ...this.aiMemory };
   }
   private makeTank(side: Side, x: number): Tank {
     return {
@@ -772,6 +910,7 @@ export class Battle {
   private canAct(side: Side) {
     return (
       !this.result &&
+      this.tankFor(side).hp > 0 &&
       this.turn === side &&
       this.phase === (side === "player" ? "aim" : "ai-aim")
     );
@@ -838,6 +977,7 @@ export class Battle {
   canShield(side: Side = "player") {
     const t = this.tankFor(side);
     return (
+      t.hp > 0 &&
       this.config.era === "modern" &&
       !this.result &&
       (this.canAct(side) || this.isReaction(side)) &&
@@ -890,11 +1030,34 @@ export class Battle {
   adjustmentRange(side: Side = "player") {
     const t = this.tankFor(side),
       other = this.tankFor(side === "player" ? "ai" : "player");
-    return reachable(
+    const range = reachable(
       this.terrain,
       t.x,
       this.canAdjust(side) ? t.mobility.remaining : 0,
       other.x,
+    );
+    const f = this.facility;
+    if (f && f.hp > 0) {
+      const gap = f.width / 2 + 34;
+      if (f.x < t.x) range.left = Math.max(range.left, f.x + gap);
+      else range.right = Math.min(range.right, f.x - gap);
+    }
+    return range;
+  }
+  private pathBlock(from: number, to: number, side: Side) {
+    const f = this.facility;
+    if (
+      f &&
+      f.hp > 0 &&
+      Math.min(from, to) < f.x + f.width / 2 + 34 &&
+      Math.max(from, to) > f.x - f.width / 2 - 34
+    )
+      return "시설이 경로를 막고 있습니다";
+    return traverseBlock(
+      this.terrain,
+      from,
+      to,
+      this.tankFor(side === "player" ? "ai" : "player").x,
     );
   }
   adjust(direction: number, side: Side = "player"): boolean {
@@ -908,12 +1071,7 @@ export class Battle {
     if (![-1, 1].includes(direction)) return false;
     const reason =
       this.adjustmentReason(side) ||
-      traverseBlock(
-        this.terrain,
-        t.x,
-        t.x + direction * 0.5,
-        this.tankFor(side === "player" ? "ai" : "player").x,
-      );
+      this.pathBlock(t.x, t.x + direction * 0.5, side);
     if (reason) {
       m.reason = reason;
       this.adjust(0, side);
@@ -948,12 +1106,7 @@ export class Battle {
       m.remaining,
       t.side === "ai" ? this.aiAdjustment : Infinity,
     );
-    const block = traverseBlock(
-      this.terrain,
-      t.x,
-      t.x + direction * distance,
-      this.tankFor(t.side === "player" ? "ai" : "player").x,
-    );
+    const block = this.pathBlock(t.x, t.x + direction * distance, t.side);
     if (block) {
       m.reason = block;
       this.adjust(0, t.side);
@@ -1011,12 +1164,15 @@ export class Battle {
   private aimAI() {
     const plan = planAI(
       this.ai,
-      this.player,
+      this.aiTargetBody,
       this.terrain,
       this.wind,
       this.difficulty,
-      this.aiMemory,
+      this.aiAttackTarget === "objective"
+        ? this.facilityAimMemory
+        : this.aiMemory,
       this.random,
+      this.config.objective ? this.collisionTargets : [],
     );
     plan.weapon = this.aiWeapon;
     this.aiPlan = plan;
@@ -1034,9 +1190,8 @@ export class Battle {
       ![-1, 1].includes(direction)
     )
       return false;
-    const t = this.tankFor(side),
-      other = side === "player" ? this.ai : this.player;
-    return canTraverse(this.terrain, t.x, t.x + direction * 2, other.x);
+    const t = this.tankFor(side);
+    return !this.pathBlock(t.x, t.x + direction * 2, side);
   }
   move(direction: number, side: Side = "player"): boolean {
     if (!this.canMove(direction, side)) return false;
@@ -1161,7 +1316,27 @@ export class Battle {
         }
       }
     }
+    if (this.facility && (a.kind === "helicopter" || index === 1)) {
+      const f = this.facility;
+      const amount = this.damageFacility(
+        airDamage(
+          a.kind,
+          Math.abs(f.x - (a.kind === "helicopter" ? point.x : a.targetX)),
+        ),
+        a.owner,
+      );
+      if (amount && f.owner !== a.owner) {
+        this.supportStats[a.owner][a.kind].damage += amount;
+        if (!a.enemyHit) {
+          a.enemyHit = true;
+          this.combat[a.owner].hits++;
+          this.supportStats[a.owner][a.kind].hits++;
+        }
+      }
+    }
     carve(this.terrain, point.x, y, weapon);
+    if (this.facility)
+      this.facility.y = facilityY(this.terrain, this.facility.x);
     this.terrainRevision++;
     this.events.push({
       type: "explosion",
@@ -1238,10 +1413,20 @@ export class Battle {
       this.airTarget = null;
     }
   }
-  lockTarget(side: Side): boolean {
-    if (this.phase !== "aim" || this.weapon !== "missile" || side !== "ai")
+  lockTarget(side: TargetId): boolean {
+    if (
+      this.phase !== "aim" ||
+      this.weapon !== "missile" ||
+      !(
+        (side === "ai" && this.ai.hp > 0) ||
+        (side === "objective" &&
+          this.facility?.owner === "ai" &&
+          this.facility.hp > 0)
+      )
+    )
       return false;
     this.target = side;
+    this.selectedTarget = side;
     return true;
   }
   steerDrone(x: number, y: number) {
@@ -1254,8 +1439,8 @@ export class Battle {
       return false;
     const d = this.drone;
     const direct =
-      this.tanks.find(
-        (t) => t.side !== d.owner && Math.hypot(t.x - d.x, t.y - 8 - d.y) <= 28,
+      this.collisionTargets.find(
+        (t) => t.hp > 0 && t.side !== d.owner && hitsTarget(d, t),
       )?.side ?? null;
     this.finishAttack(
       { x: d.x, y: d.y, direct, escaped: false },
@@ -1266,6 +1451,7 @@ export class Battle {
   }
   canEmp(side: Side): boolean {
     return (
+      this.tankFor(side).hp > 0 &&
       this.config.era === "modern" &&
       this.phase === "deploy" &&
       !!this.defense &&
@@ -1304,7 +1490,7 @@ export class Battle {
   fire(): boolean {
     return (
       this.phase === "aim" &&
-      (this.weapon !== "missile" || this.target === "ai") &&
+      (this.weapon !== "missile" || this.target !== null) &&
       this.shoot(this.player, this.weapon)
     );
   }
@@ -1334,6 +1520,7 @@ export class Battle {
       this.phase = "deploy";
       const willDefend =
         tank.side === "player" &&
+        this.ai.hp > 0 &&
         this.ai.emp > 0 &&
         this.random() < AI_PROFILE[this.difficulty].emp;
       this.defense = {
@@ -1343,7 +1530,8 @@ export class Battle {
         reactionAt: willDefend ? 0.65 + this.random() * 1.05 : null,
       };
       if (weapon === "drone") {
-        const target = tank.side === "player" ? this.ai : this.player;
+        const target =
+          tank.side === "player" ? this.targetBody : this.aiTargetBody;
         const error =
           this.difficulty === "easy"
             ? 120
@@ -1367,7 +1555,7 @@ export class Battle {
         this.projectile = launch(tank, weapon);
         this.projectile.guided = true;
         this.projectile.target =
-          tank.side === "player" ? this.target! : "player";
+          tank.side === "player" ? this.target! : this.aiAttackTarget;
       }
       this.events.push({
         type: "threat",
@@ -1394,7 +1582,10 @@ export class Battle {
   private finishAttack(hit: Impact | null, weapon: WeaponId, owner: Side) {
     this.lastImpact[owner] = hit;
     if (owner === "ai" && weapon !== "drone" && weapon !== "missile" && hit)
-      this.aiMemory.lastMiss = hit.x - this.player.x;
+      (this.aiAttackTarget === "objective"
+        ? this.facilityAimMemory
+        : this.aiMemory
+      ).lastMiss = hit.x - this.aiTargetBody.x;
     this.projectile = null;
     this.drone = null;
     this.defense = null;
@@ -1415,6 +1606,11 @@ export class Battle {
   private tick() {
     if (this.phase === "over") return;
     this.elapsed += STEP;
+    if (this.facility) {
+      this.facility.y = facilityY(this.terrain, this.facility.x);
+      this.facility.hurt = Math.max(0, this.facility.hurt - STEP * 2);
+      if (this.facility.hp <= 0) this.facility.destroyedAge += STEP;
+    }
     for (const tank of this.tanks)
       tank.mobility.dust = Math.max(0, tank.mobility.dust - STEP);
     if (
@@ -1467,10 +1663,9 @@ export class Battle {
           a.startHp + Math.round(a.amount * Math.min(1, a.age / a.duration));
       if (a.kind === "move") {
         const step = Math.min(MOVE_SPEED * STEP, MOVE_DISTANCE - a.distance);
-        const other = a.owner === "player" ? this.ai : this.player;
         if (
           step > 0 &&
-          canTraverse(this.terrain, t.x, t.x + a.direction * step, other.x)
+          !this.pathBlock(t.x, t.x + a.direction * step, a.owner)
         ) {
           t.x += a.direction * step;
           t.mobility.travel += a.direction * step;
@@ -1553,7 +1748,7 @@ export class Battle {
       const hit = advance(
         probe,
         this.terrain,
-        this.tanks.filter((t) => t.side !== d.owner),
+        this.collisionTargets.filter((t) => t.side !== d.owner),
         0,
         STEP,
         0,
@@ -1567,10 +1762,9 @@ export class Battle {
         d.owner === "ai" &&
         Math.hypot(d.x - d.destination.x, d.y - d.destination.y) < 12
       ) {
-        const direct =
-          Math.hypot(d.x - this.player.x, d.y - this.player.y + 8) < 28
-            ? "player"
-            : null;
+        const direct = hitsTarget(d, this.aiTargetBody)
+          ? this.aiAttackTarget
+          : null;
         this.finishAttack(
           { x: d.x, y: d.y, direct, escaped: false },
           "drone",
@@ -1584,8 +1778,8 @@ export class Battle {
       const p = this.projectile,
         hit =
           p.weapon === "missile"
-            ? advanceMissile(p, this.terrain, this.tanks, this.wind)
-            : advance(p, this.terrain, this.tanks, this.wind);
+            ? advanceMissile(p, this.terrain, this.collisionTargets, this.wind)
+            : advance(p, this.terrain, this.collisionTargets, this.wind);
       p.trail.push({ x: p.x, y: p.y });
       if (p.trail.length > 55) p.trail.shift();
       if (hit) {
@@ -1685,12 +1879,30 @@ export class Battle {
       t.vx +=
         Math.sign(t.x - hit.x || (owner === "player" ? 1 : -1)) * force * 5;
     }
+    if (this.facility && this.facility.hp > 0) {
+      const f = this.facility,
+        direct = hit.direct === "objective";
+      const amount = this.damageFacility(
+        blastDamage(Math.hypot(f.x - hit.x, f.y - 8 - hit.y), weapon, direct),
+        owner,
+        weapon,
+      );
+      if (amount && f.owner !== owner) {
+        enemyHit = true;
+        if (direct) {
+          this.combat[owner].direct++;
+          this.telemetry[owner][weapon].direct++;
+        }
+      }
+    }
     if (enemyHit) {
       this.combat[owner].hits++;
       this.telemetry[owner][weapon].hits++;
     }
     carve(this.terrain, hit.x, hit.y, weapon);
     this.terrainRevision++;
+    if (this.facility)
+      this.facility.y = facilityY(this.terrain, this.facility.x);
     this.events.push({
       type: "explosion",
       x: hit.x,
@@ -1700,19 +1912,39 @@ export class Battle {
     });
   }
   private nextTurn() {
-    const outcome =
-      judge(this.player.hp, this.ai.hp) ??
-      (this.round >= 40 &&
-      (this.turn === "ai" || this.resumeAfterAir !== null) &&
-      !this.pendingAir
-        ? this.config.winCondition === "destroy"
-          ? "defeat"
-          : this.player.hp === this.ai.hp
-            ? "draw"
-            : this.player.hp > this.ai.hp
-              ? "victory"
-              : "defeat"
-        : null);
+    if (this.ai.hp <= 0 && this.pendingAir?.owner === "ai")
+      this.pendingAir = null;
+    const cycleEnded =
+      !this.pendingAir &&
+      ((this.turn === "ai" && this.resumeAfterAir !== "ai") ||
+        this.resumeAfterAir === "player" ||
+        (this.ai.hp <= 0 && this.turn === "player"));
+    if (this.config.objective && cycleEnded) this.completedRounds++;
+    const missionVerdict = this.config.objective
+      ? objectiveVerdict(
+          this.config.objective,
+          this.player.hp,
+          this.ai.hp,
+          this.facility,
+          this.completedRounds,
+          this.allowedWeapons.some((w) => this.player.ammo[w] > 0) ||
+            this.pendingAir?.owner === "player",
+        )
+      : null;
+    const outcome = this.config.objective
+      ? (missionVerdict?.outcome ?? null)
+      : (judge(this.player.hp, this.ai.hp) ??
+        (this.round >= 40 &&
+        (this.turn === "ai" || this.resumeAfterAir !== null) &&
+        !this.pendingAir
+          ? this.config.winCondition === "destroy"
+            ? "defeat"
+            : this.player.hp === this.ai.hp
+              ? "draw"
+              : this.player.hp > this.ai.hp
+                ? "victory"
+                : "defeat"
+          : null));
     if (outcome) {
       this.phase = "over";
       this.pendingAir = null;
@@ -1728,6 +1960,14 @@ export class Battle {
       this.result = {
         ...this.stats,
         missionId: this.config.missionId,
+        objective: this.objectiveRecord,
+        reason: missionVerdict?.reason,
+        round: this.config.objective
+          ? Math.min(
+              this.completedRounds + (cycleEnded ? 0 : 1),
+              this.config.objective.rounds,
+            )
+          : this.round,
         id: `${this.seed}-${Date.now()}`,
         outcome,
         hp: this.player.hp,
@@ -1746,9 +1986,15 @@ export class Battle {
       this.beginAir();
       return;
     }
+    if (this.pendingAir?.owner === "player" && this.ai.hp <= 0) {
+      this.beginAir();
+      return;
+    }
     if (this.pendingAir) this.pendingAir.responseStarted = true;
     const next =
-      this.resumeAfterAir ?? (this.turn === "player" ? "ai" : "player");
+      this.ai.hp <= 0
+        ? "player"
+        : (this.resumeAfterAir ?? (this.turn === "player" ? "ai" : "player"));
     this.resumeAfterAir = null;
     for (const t of this.tanks) this.adjust(0, t.side);
     this.aiAdjustment = 0;
@@ -1761,8 +2007,27 @@ export class Battle {
     if (next === "ai") {
       this.turn = "ai";
       this.phase = "ai-aim";
-      this.timer = 0.8;
+      this.timer = this.config.objective ? 1.3 : 0.8;
       this.aiPlan = null;
+      if (this.config.objective?.type === "defend" && this.facility?.hp) {
+        const probability =
+          this.difficulty === "easy"
+            ? 0.35
+            : this.difficulty === "hard"
+              ? 0.65
+              : 0.5;
+        this.aiAttackTarget =
+          this.completedRounds === 0
+            ? "objective"
+            : this.completedRounds === 1
+              ? "player"
+              : this.mobilityRandom() <
+                  probability +
+                    (this.facility.hp < 30 ? 0.1 : 0) -
+                    (this.player.hp < 30 ? 0.15 : 0)
+                ? "objective"
+                : "player";
+      } else this.aiAttackTarget = "player";
       this.aiAction = chooseTactic(this);
       if (this.aiAction) return;
       let tacticalWeapon = chooseArsenal(

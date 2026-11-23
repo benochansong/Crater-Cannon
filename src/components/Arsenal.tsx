@@ -556,7 +556,14 @@ export function Arsenal({
               className={`target-button ${b.target ? "locked" : ""}`}
               onClick={onLock}
             >
-              {b.target ? "◎ 목표 지정 완료" : "⊕ 레드 배저 목표 지정"}
+              {b.target
+                ? "◎ 목표 지정 완료"
+                : "⊕ " +
+                  (b.selectedTarget === "objective" &&
+                  b.facility?.owner === "ai"
+                    ? b.facility.name
+                    : b.config.enemyName) +
+                  " 목표 지정"}
             </button>
           ) : (
             <span>

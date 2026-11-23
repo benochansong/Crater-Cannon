@@ -167,7 +167,7 @@ test("campaign: four real victories, ordered unlocks, era transition, persistent
   expect(s.stats.shots).toBe(0);
   await page.reload();
   await page.getByRole("button", { name: /스토리 캠페인/ }).click();
-  await expect(page.getByText("보급 점수 800 · 완료 4/4")).toBeVisible();
+  await expect(page.getByText("보급 점수 800 · 완료 4/6")).toBeVisible();
   await page.getByRole("button", { name: /자유 전투로 이동/ }).click();
   s = await snap(page);
   expect(s.config.missionId).toBeUndefined();

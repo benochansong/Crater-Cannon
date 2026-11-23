@@ -1,3 +1,4 @@
+import { drawFacility } from "./facilityRenderer";
 import { drawTracks, drawMobility } from "./mobilityRenderer";
 import { drawCampaignBackground, drawEraTank } from "./campaignRenderer";
 import { drawTactics } from "./tacticalRenderer";
@@ -238,7 +239,7 @@ export class Renderer {
         x: e.x,
         y: e.y,
         age: 0,
-        text: `−${e.amount}`,
+        text: (e.facility ? "시설 " : "") + `−${e.amount}`,
         direct: !!e.direct,
         color: e.side === "ai" ? "#fff8b5" : "#ffddce",
       });
@@ -280,7 +281,10 @@ export class Renderer {
     ctx.translate(this.camera.x, this.camera.y);
     ctx.scale(this.camera.scale, this.camera.scale);
     this.terrain(ctx, game);
-    if (!options.menu) drawMobility(ctx, game);
+    if (!options.menu) {
+      drawMobility(ctx, game);
+      drawFacility(ctx, game, this.time);
+    }
     if (
       game.phase === "aim" &&
       !options.menu &&
@@ -290,7 +294,11 @@ export class Renderer {
       this.guide(ctx, game);
     if (game.drone) this.drawDrone(ctx, game.drone);
     if (!options.menu && game.weapon === "missile" && game.phase === "aim") {
-      const t = game.ai;
+      const t =
+        game.collisionTargets.find((body) => body.side === game.target) ??
+        (game.selectedTarget === "objective" && game.facility?.owner === "ai"
+          ? game.facility
+          : game.ai);
       ctx.strokeStyle = game.target ? "#ee7246" : "#fff1ba";
       ctx.lineWidth = 2;
       ctx.setLineDash([9, 5]);
@@ -761,14 +769,24 @@ export class Renderer {
     const p = launch(game.player, game.weapon);
     if (p.weapon === "missile") {
       p.guided = true;
-      p.target = "ai";
+      p.target =
+        game.target ??
+        (game.selectedTarget === "objective" && game.facility?.owner === "ai"
+          ? "objective"
+          : "ai");
     }
     ctx.fillStyle = "#fffadd";
     for (let i = 0; i < 75; i++) {
       if (
         p.weapon === "missile"
-          ? advanceMissile(p, game.terrain, game.tanks, game.wind, STEP)
-          : advance(p, game.terrain, game.tanks, game.wind, STEP)
+          ? advanceMissile(
+              p,
+              game.terrain,
+              game.collisionTargets,
+              game.wind,
+              STEP,
+            )
+          : advance(p, game.terrain, game.collisionTargets, game.wind, STEP)
       )
         break;
       if (i % 10 === 0) {

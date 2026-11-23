@@ -1,8 +1,18 @@
+import type { ObjectiveConfig } from "./objectives";
 import type { WeaponId } from "./engine";
 import type { AirKind } from "./airSupport";
 export type Era = "ww2" | "modern";
-export type Field = "valley" | "normandy" | "france" | "fortress" | "frontier";
+export type Field =
+  | "valley"
+  | "normandy"
+  | "france"
+  | "fortress"
+  | "frontier"
+  | "signal"
+  | "radar";
 export interface BattleConfig {
+  objective?: ObjectiveConfig;
+  spawns?: { player: number; ai: number };
   initialHp?: { player: number; ai: number };
   winCondition?: "destroy" | "hp-verdict";
   era: Era;

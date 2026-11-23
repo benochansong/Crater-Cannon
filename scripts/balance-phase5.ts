@@ -4,7 +4,7 @@ import { MISSIONS } from "../src/game/campaign";
 import { FREE_BATTLE } from "../src/game/eras";
 const results = [];
 for (const scenario of [
-  ...MISSIONS.map((m) => ({
+  ...MISSIONS.slice(0, 4).map((m) => ({
     id: m.id,
     difficulty: m.difficulty,
     config: m.config,

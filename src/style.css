@@ -2622,3 +2622,144 @@ h2 {
     max-width: calc(100% - 24px);
   }
 }
+
+/* Phase 7 objectives: independent facility state and clear attack targets. */
+.operation-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px 18px;
+  padding: 10px 20px;
+  background: #dce6d7;
+  border-bottom: 1px solid #9eb6a1;
+  color: #254c42;
+}
+.operation-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  font-size: 11px;
+}
+.operation-status small {
+  flex-basis: 100%;
+  letter-spacing: 1px;
+  font-size: 9px;
+}
+.operation-status strong {
+  font-size: 13px;
+}
+.operation-status progress {
+  width: 90px;
+  height: 8px;
+  accent-color: #54876a;
+}
+.operation-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 10px;
+}
+.objective-targets {
+  display: flex;
+  gap: 6px;
+}
+.operation-panel button {
+  padding: 6px 9px;
+  border: 1px solid #9cb29a;
+  border-radius: 5px;
+  background: #f2f1db;
+  color: #31594b;
+  font-size: 11px;
+  font-weight: 700;
+}
+.operation-panel button[aria-pressed="true"] {
+  background: #346c61;
+  color: #fff3cb;
+  border-color: #346c61;
+}
+.operation-panel button:disabled {
+  opacity: 0.45;
+}
+.operation-panel p {
+  grid-column: 1/-1;
+  margin: 0;
+  font-size: 11px;
+}
+.operation-panel .objective-warning {
+  color: #9b4d30;
+  font-weight: 800;
+}
+.operation-cinematic {
+  padding: 16px;
+  background: #203f3e;
+  color: #e8ebbf;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.operation-cinematic span {
+  display: block;
+  animation: reinforcements 2.4s ease-out both;
+}
+.operation-cinematic b {
+  display: block;
+  font-size: 12px;
+  margin-top: 8px;
+  animation: appear 1s ease-out both;
+}
+.objective-result {
+  padding: 12px;
+  background: #e2e9d5;
+  border-radius: 6px;
+}
+@keyframes reinforcements {
+  from {
+    transform: translateX(-55px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@media (min-width: 1051px) {
+  .app:has(.operation-panel) {
+    max-width: min(1600px, calc((100dvh - 555px) * 2 + 7vw));
+  }
+}
+@media (max-width: 740px) {
+  .operation-panel {
+    padding: 8px 10px;
+    gap: 7px;
+    grid-template-columns: 1fr;
+  }
+  .operation-status {
+    font-size: 10px;
+  }
+  .operation-status strong {
+    font-size: 12px;
+  }
+  .operation-actions {
+    gap: 5px;
+  }
+  .operation-panel p {
+    font-size: 10px;
+  }
+  .objective-targets button {
+    flex: 1;
+    min-height: 32px;
+  }
+}
+/* Long mission names must leave the numeric HP readable on narrow screens. */
+.pilot-heading > div {
+  min-width: 0;
+  flex: 1;
+}
+.pilot-heading strong {
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.pilot-heading > b {
+  flex-shrink: 0;
+  white-space: nowrap;
+}

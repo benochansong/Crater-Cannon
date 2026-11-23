@@ -1,3 +1,5 @@
+import { OperationHUD } from "./components/OperationHUD";
+import { missionSucceeded } from "./game/objectives";
 import { Mobility } from "./components/Mobility";
 import {
   CampaignSelect,
@@ -141,8 +143,7 @@ function App() {
           const m = getMission(battle.config.missionId);
           if (m) {
             setReward(
-              battle.result.outcome === "victory" &&
-                battle.result.enemyHp <= 0 &&
+              missionSucceeded(m.config, battle.result) &&
                 !progress.completed.includes(m.id)
                 ? m.reward
                 : 0,
@@ -242,7 +243,11 @@ function App() {
     }
   }
   function lock() {
-    battle.lockTarget("ai");
+    battle.lockTarget(
+      battle.selectedTarget === "objective" && battle.facility?.owner === "ai"
+        ? "objective"
+        : "ai",
+    );
     refresh((n) => n + 1);
   }
   function dismissHint() {
@@ -448,6 +453,24 @@ function App() {
       refresh((n) => n + 1);
       return;
     }
+    const facility = battle.facility;
+    if (
+      facility &&
+      Math.abs(x - facility.x) < facility.width / 2 + 10 &&
+      Math.abs(y - (facility.y - 8)) < facility.height / 2 + 12
+    ) {
+      battle.chooseTarget("objective");
+      refresh((n) => n + 1);
+      return;
+    }
+    if (
+      Math.hypot(x - battle.ai.x, y - battle.ai.y) < 50 &&
+      battle.config.objective
+    ) {
+      battle.chooseTarget("ai");
+      refresh((n) => n + 1);
+      return;
+    }
     if (
       battle.weapon === "missile" &&
       Math.hypot(x - battle.ai.x, y - battle.ai.y) < 60
@@ -501,7 +524,7 @@ function App() {
           aria-label="크레이터 캐논 메인 메뉴"
         >
           <span className="brand-icon">✦</span> CRATER CANNON{" "}
-          <span className="edition">TANK MOBILITY & TERRAIN TACTICS</span>
+          <span className="edition">FRONTLINE OPERATIONS</span>
         </button>
         <div className="top-actions">
           <span className="local-badge">싱글 플레이 · 로컬 전투</span>
@@ -801,6 +824,15 @@ function App() {
           </div>
         ) : (
           <>
+            <OperationHUD
+              battle={battle}
+              ready={ready}
+              onChoose={(id) => {
+                battle.chooseTarget(id);
+                refresh((n) => n + 1);
+              }}
+              onReinforce={() => tactic(() => battle.reinforce())}
+            />
             <Mobility
               key={"mobility-" + battle.seed}
               battle={battle}
@@ -846,7 +878,7 @@ function App() {
         <span>한 발의 포탄이 전장의 운명을 바꾼다.</span>
         <div>
           <button onClick={() => setOverlay("help")}>조작 안내</button>
-          <span>PHASE 6 / TERRAIN TACTICS</span>
+          <span>PHASE 7 / FRONTLINE OPERATIONS</span>
         </div>
       </footer>
       {screen === "result" && result && !selectedMission && (
@@ -1050,8 +1082,9 @@ function App() {
                 제공합니다. EMP는 드론·유도탄 출격 중 4초 안에 E로 사용합니다.
                 캠페인에서는 시대와 임무에 맞는 장비만 사용할 수 있습니다.
                 WWII의 연막은 다음 적 포격 조준을 흔들고, 엄폐는 다음 공격
-                피해를 35% 줄입니다. 캠페인은 40라운드 안에 적을 격파해야 하며,
-                자유 전투는 남은 HP로 판정합니다.
+                피해를 35% 줄입니다. 기존 격파 임무는 40라운드 제한이며,
+                통신시설은 6라운드 방어, 레이더는 8라운드 안에 파괴해야 합니다.
+                자유 전투는 40라운드 종료 시 남은 HP로 판정합니다.
               </p>
               <div className="help-steps">
                 <p>

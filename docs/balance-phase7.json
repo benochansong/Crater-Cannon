@@ -1,0 +1,1059 @@
+{
+  "date": "2026-11-23",
+  "method": "Phase 7 objectives; 90 simulated games. Legacy 70 use Phase 6 policy; defense deliberately misses, reinforces at facility HP<=55 and survives six rounds; radar policy targets the facility with shared ballistics and actual obstacles. Ten shared seeds (31–40) per mission/free difficulty. Solver-assisted artillery with error ±2 degrees/±3 power; AP where allowed; repair at HP<=45; reactive shield and EMP; one support call when available. No injected health, position or outcomes. Time excludes human decisions; not a human difficulty rating.",
+  "results": [
+    {
+      "scenario": "normandy",
+      "difficulty": "easy",
+      "games": 10,
+      "playerWins": 9,
+      "timeouts": 0,
+      "roundLimits": 0,
+      "meanSeconds": 55,
+      "meanRounds": 8.3,
+      "aiHitRate": 0.38235294117647056,
+      "playerRepairs": 3,
+      "playerShields": 0,
+      "aiShortDistance": 166,
+      "aiShortTurns": 9,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "round": 5,
+          "hp": 76,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 100,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "round": 7,
+          "hp": 72,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "round": 5,
+          "hp": 100,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 35,
+          "outcome": "defeat",
+          "round": 13,
+          "hp": 0,
+          "enemyHp": 11,
+          "breach": 1
+        },
+        {
+          "seed": 36,
+          "outcome": "victory",
+          "round": 15,
+          "hp": 17,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "round": 7,
+          "hp": 71,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "round": 8,
+          "hp": 68,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "round": 9,
+          "hp": 61,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 40,
+          "outcome": "victory",
+          "round": 8,
+          "hp": 48,
+          "enemyHp": 0,
+          "breach": 1
+        }
+      ]
+    },
+    {
+      "scenario": "iron",
+      "difficulty": "normal",
+      "games": 10,
+      "playerWins": 10,
+      "timeouts": 0,
+      "roundLimits": 0,
+      "meanSeconds": 62,
+      "meanRounds": 9.8,
+      "aiHitRate": 0.4067796610169492,
+      "playerRepairs": 4,
+      "playerShields": 0,
+      "aiShortDistance": 209,
+      "aiShortTurns": 12,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "round": 5,
+          "hp": 76,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "round": 7,
+          "hp": 100,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "round": 5,
+          "hp": 76,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "round": 11,
+          "hp": 52,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "round": 5,
+          "hp": 74,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 36,
+          "outcome": "victory",
+          "round": 17,
+          "hp": 25,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "round": 11,
+          "hp": 74,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "round": 8,
+          "hp": 52,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "round": 14,
+          "hp": 84,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 40,
+          "outcome": "victory",
+          "round": 15,
+          "hp": 52,
+          "enemyHp": 0,
+          "breach": 1
+        }
+      ]
+    },
+    {
+      "scenario": "last-line",
+      "difficulty": "hard",
+      "games": 10,
+      "playerWins": 9,
+      "timeouts": 0,
+      "roundLimits": 0,
+      "meanSeconds": 82,
+      "meanRounds": 10.8,
+      "aiHitRate": 0.5,
+      "playerRepairs": 7,
+      "playerShields": 0,
+      "aiShortDistance": 412,
+      "aiShortTurns": 14,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "round": 7,
+          "hp": 48,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "round": 7,
+          "hp": 76,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "round": 9,
+          "hp": 58,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "round": 9,
+          "hp": 50,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "round": 4,
+          "hp": 74,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 36,
+          "outcome": "victory",
+          "round": 22,
+          "hp": 11,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "round": 15,
+          "hp": 50,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 79,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "round": 14,
+          "hp": 69,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 40,
+          "outcome": "defeat",
+          "round": 15,
+          "hp": 0,
+          "enemyHp": 43,
+          "breach": 1
+        }
+      ]
+    },
+    {
+      "scenario": "shadow",
+      "difficulty": "normal",
+      "games": 10,
+      "playerWins": 10,
+      "timeouts": 0,
+      "roundLimits": 0,
+      "meanSeconds": 119,
+      "meanRounds": 10.9,
+      "aiHitRate": 0.46835443037974683,
+      "playerRepairs": 3,
+      "playerShields": 20,
+      "aiShortDistance": 422,
+      "aiShortTurns": 16,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "round": 7,
+          "hp": 89,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "round": 9,
+          "hp": 65,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "round": 9,
+          "hp": 52,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "round": 12,
+          "hp": 49,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "round": 15,
+          "hp": 25,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 36,
+          "outcome": "victory",
+          "round": 11,
+          "hp": 50,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "round": 9,
+          "hp": 85,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "round": 10,
+          "hp": 60,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "round": 15,
+          "hp": 51,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 40,
+          "outcome": "victory",
+          "round": 12,
+          "hp": 64,
+          "enemyHp": 0,
+          "breach": 1
+        }
+      ]
+    },
+    {
+      "scenario": "last-signal",
+      "difficulty": "normal",
+      "games": 10,
+      "playerWins": 10,
+      "timeouts": 0,
+      "roundLimits": 0,
+      "meanSeconds": 69,
+      "meanRounds": 6,
+      "aiHitRate": 0.4,
+      "playerRepairs": 0,
+      "playerShields": 20,
+      "aiShortDistance": 432,
+      "aiShortTurns": 12,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 77,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "defend",
+            "hp": 67,
+            "maxHp": 70,
+            "completedRounds": 6,
+            "reinforcement": 1,
+            "restored": 15
+          },
+          "reason": "defended"
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 63,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "defend",
+            "hp": 70,
+            "maxHp": 70,
+            "completedRounds": 6,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "defended"
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 82,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "defend",
+            "hp": 43,
+            "maxHp": 70,
+            "completedRounds": 6,
+            "reinforcement": 1,
+            "restored": 15
+          },
+          "reason": "defended"
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 100,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "defend",
+            "hp": 67,
+            "maxHp": 70,
+            "completedRounds": 6,
+            "reinforcement": 1,
+            "restored": 15
+          },
+          "reason": "defended"
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 100,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "defend",
+            "hp": 37,
+            "maxHp": 70,
+            "completedRounds": 6,
+            "reinforcement": 1,
+            "restored": 15
+          },
+          "reason": "defended"
+        },
+        {
+          "seed": 36,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 82,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "defend",
+            "hp": 52,
+            "maxHp": 70,
+            "completedRounds": 6,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "defended"
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 75,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "defend",
+            "hp": 52,
+            "maxHp": 70,
+            "completedRounds": 6,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "defended"
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 96,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "defend",
+            "hp": 70,
+            "maxHp": 70,
+            "completedRounds": 6,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "defended"
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 83,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "defend",
+            "hp": 60,
+            "maxHp": 70,
+            "completedRounds": 6,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "defended"
+        },
+        {
+          "seed": 40,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 99,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "defend",
+            "hp": 70,
+            "maxHp": 70,
+            "completedRounds": 6,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "defended"
+        }
+      ]
+    },
+    {
+      "scenario": "blind-enemy",
+      "difficulty": "normal",
+      "games": 10,
+      "playerWins": 10,
+      "timeouts": 0,
+      "roundLimits": 0,
+      "meanSeconds": 51,
+      "meanRounds": 4.9,
+      "aiHitRate": 0.32432432432432434,
+      "playerRepairs": 0,
+      "playerShields": 19,
+      "aiShortDistance": 233,
+      "aiShortTurns": 7,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "round": 4,
+          "hp": 99,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "destroy-objective",
+            "hp": 0,
+            "maxHp": 65,
+            "completedRounds": 3,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "target-destroyed"
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "round": 4,
+          "hp": 99,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "destroy-objective",
+            "hp": 0,
+            "maxHp": 65,
+            "completedRounds": 3,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "target-destroyed"
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 68,
+          "enemyHp": 76,
+          "breach": 1,
+          "objective": {
+            "type": "destroy-objective",
+            "hp": 0,
+            "maxHp": 65,
+            "completedRounds": 5,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "target-destroyed"
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "round": 3,
+          "hp": 100,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "destroy-objective",
+            "hp": 0,
+            "maxHp": 65,
+            "completedRounds": 2,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "target-destroyed"
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "round": 4,
+          "hp": 98,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "destroy-objective",
+            "hp": 0,
+            "maxHp": 65,
+            "completedRounds": 3,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "target-destroyed"
+        },
+        {
+          "seed": 36,
+          "outcome": "victory",
+          "round": 7,
+          "hp": 95,
+          "enemyHp": 56,
+          "breach": 1,
+          "objective": {
+            "type": "destroy-objective",
+            "hp": 0,
+            "maxHp": 65,
+            "completedRounds": 6,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "target-destroyed"
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "round": 4,
+          "hp": 100,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "destroy-objective",
+            "hp": 0,
+            "maxHp": 65,
+            "completedRounds": 3,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "target-destroyed"
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 71,
+          "enemyHp": 76,
+          "breach": 1,
+          "objective": {
+            "type": "destroy-objective",
+            "hp": 0,
+            "maxHp": 65,
+            "completedRounds": 5,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "target-destroyed"
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "round": 4,
+          "hp": 88,
+          "enemyHp": 100,
+          "breach": 1,
+          "objective": {
+            "type": "destroy-objective",
+            "hp": 0,
+            "maxHp": 65,
+            "completedRounds": 3,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "target-destroyed"
+        },
+        {
+          "seed": 40,
+          "outcome": "victory",
+          "round": 7,
+          "hp": 92,
+          "enemyHp": 80,
+          "breach": 1,
+          "objective": {
+            "type": "destroy-objective",
+            "hp": 0,
+            "maxHp": 65,
+            "completedRounds": 6,
+            "reinforcement": 0,
+            "restored": 0
+          },
+          "reason": "target-destroyed"
+        }
+      ]
+    },
+    {
+      "scenario": "free-easy",
+      "difficulty": "easy",
+      "games": 10,
+      "playerWins": 10,
+      "timeouts": 0,
+      "roundLimits": 0,
+      "meanSeconds": 102,
+      "meanRounds": 8.9,
+      "aiHitRate": 0.2835820895522388,
+      "playerRepairs": 1,
+      "playerShields": 20,
+      "aiShortDistance": 80,
+      "aiShortTurns": 4,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 100,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "round": 7,
+          "hp": 92,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "round": 9,
+          "hp": 52,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "round": 8,
+          "hp": 68,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "round": 15,
+          "hp": 56,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 36,
+          "outcome": "victory",
+          "round": 11,
+          "hp": 66,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "round": 5,
+          "hp": 76,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "round": 11,
+          "hp": 40,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "round": 9,
+          "hp": 76,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 40,
+          "outcome": "victory",
+          "round": 8,
+          "hp": 73,
+          "enemyHp": 0,
+          "breach": 1
+        }
+      ]
+    },
+    {
+      "scenario": "free-normal",
+      "difficulty": "normal",
+      "games": 10,
+      "playerWins": 10,
+      "timeouts": 0,
+      "roundLimits": 0,
+      "meanSeconds": 115,
+      "meanRounds": 10.2,
+      "aiHitRate": 0.4782608695652174,
+      "playerRepairs": 4,
+      "playerShields": 20,
+      "aiShortDistance": 382,
+      "aiShortTurns": 11,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "round": 10,
+          "hp": 56,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "round": 7,
+          "hp": 87,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "round": 8,
+          "hp": 48,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 82,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "round": 14,
+          "hp": 70,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 36,
+          "outcome": "victory",
+          "round": 14,
+          "hp": 65,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "round": 9,
+          "hp": 70,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "round": 10,
+          "hp": 58,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "round": 9,
+          "hp": 90,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 40,
+          "outcome": "victory",
+          "round": 15,
+          "hp": 64,
+          "enemyHp": 0,
+          "breach": 1
+        }
+      ]
+    },
+    {
+      "scenario": "free-hard",
+      "difficulty": "hard",
+      "games": 10,
+      "playerWins": 10,
+      "timeouts": 0,
+      "roundLimits": 0,
+      "meanSeconds": 131,
+      "meanRounds": 11.2,
+      "aiHitRate": 0.618421052631579,
+      "playerRepairs": 5,
+      "playerShields": 20,
+      "aiShortDistance": 1014,
+      "aiShortTurns": 24,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "round": 15,
+          "hp": 25,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "round": 9,
+          "hp": 59,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "round": 10,
+          "hp": 55,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "round": 6,
+          "hp": 79,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "round": 14,
+          "hp": 60,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 36,
+          "outcome": "victory",
+          "round": 13,
+          "hp": 80,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "round": 12,
+          "hp": 50,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "round": 9,
+          "hp": 50,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "round": 10,
+          "hp": 83,
+          "enemyHp": 0,
+          "breach": 1
+        },
+        {
+          "seed": 40,
+          "outcome": "victory",
+          "round": 14,
+          "hp": 40,
+          "enemyHp": 0,
+          "breach": 1
+        }
+      ]
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { missionSucceeded, REASON_TEXT } from "../game/objectives";
 import { useEffect, useState } from "react";
 import { MISSIONS, nextMission } from "../game/campaign";
 import type { Mission } from "../game/campaign";
@@ -15,7 +16,7 @@ export function CampaignArt({
   field: Field;
   completion?: boolean;
 }) {
-  const modern = field === "frontier",
+  const modern = ["frontier", "signal", "radar"].includes(field),
     fortress = field === "fortress",
     france = field === "france";
   const sky = modern
@@ -116,6 +117,25 @@ export function CampaignArt({
         fill={modern ? "#344342" : "#576045"}
       />
       <path d="M0 335Q230 275 480 325T800 310V380H0Z" fill="#263732" />
+      {(field === "signal" || field === "radar") && (
+        <g transform="translate(620 260)" stroke="#132c31" strokeWidth="4">
+          <path d="M-72 25V-35H72V25Z" fill="#7f9d8c" />
+          <path d="M-82-35H82L65-55H-65Z" fill="#b3c8a5" />
+          <path d="M-22-55 0-140 22-55" fill="none" stroke="#c0dac6" />
+          {field === "signal" ? (
+            <>
+              <path d="M-42-105H42M-30-127H30" stroke="#d1e6c2" />
+              <circle cy="-145" r="7" fill="#9cf3d3" />
+            </>
+          ) : (
+            <>
+              <path d="M-58-135Q0-70 58-135Z" fill="#afcdbb" />
+              <path d="M0-112V-160" stroke="#d6e6c4" />
+            </>
+          )}
+          <path d="M-48-15H-27M27-15H48" stroke="#d2f1cf" strokeWidth="10" />
+        </g>
+      )}
       <g transform="translate(115 235)" stroke="#172923" strokeWidth="4">
         <path d="M0 65L28 35H230L257 65L240 100H20Z" fill="#172c29" />
         {[35, 73, 111, 149, 187, 225].map((x) => (
@@ -246,7 +266,7 @@ export function CampaignSelect({
   onFree: () => void;
 }) {
   const [era, setEra] = useState<Era>(
-    progress.current === "shadow" ? "modern" : "ww2",
+    MISSIONS.find((m) => m.id === progress.current)?.era ?? "ww2",
   );
   return (
     <section className="campaign-screen">
@@ -266,7 +286,7 @@ export function CampaignSelect({
           aria-pressed={era === "modern"}
           onClick={() => setEra("modern")}
         >
-          2020s · 가상의 현대전 <small>윤서진의 기록 / 1개 임무</small>
+          2020s · 가상의 현대전 <small>윤서진의 기록 / 3개 임무</small>
         </button>
       </div>
       <div className="campaign-overview">
@@ -284,7 +304,8 @@ export function CampaignSelect({
               : "가상 국가 세라 연방의 국경. 새로운 지휘관이 무인 장비와 전자전에 맞섭니다."}
           </p>
           <b>
-            보급 점수 {progress.supplies} · 완료 {progress.completed.length}/4
+            보급 점수 {progress.supplies} · 완료 {progress.completed.length}/
+            {MISSIONS.length}
           </b>
           <p className="historical-note">
             역사적 시대 배경 위의 가상 인물·차량·전투입니다. 현대전은 실제 특정
@@ -386,8 +407,12 @@ export function MissionBriefing({
           </div>
         </div>
         <p className="historical-note">
-          차량·전투·대사는 창작입니다. 임무는 적 격파 시 성공하며, 40라운드 초과
-          시 실패합니다.
+          차량·전투·대사는 창작입니다.{" "}
+          {m.config.objective
+            ? m.config.objective.type === "defend"
+              ? "시설과 차량 생존이 모두 필요합니다. 적을 먼저 격파하면 조기 성공합니다."
+              : "시설 파괴가 목표입니다. 플레이어 파괴 또는 제한 라운드 초과 시 실패합니다."
+            : "임무는 적 격파 시 성공하며, 40라운드 초과 시 실패합니다."}
         </p>
         <div className="briefing-actions">
           <button onClick={onBack}>← 임무 선택</button>
@@ -462,12 +487,26 @@ export function MissionResult({
   onNext: (m: Mission) => void;
   onBack: () => void;
 }) {
-  const win = r.outcome === "victory" && r.enemyHp <= 0,
+  const win = missionSucceeded(m.config, r),
     next = nextMission(m.id);
   return (
     <section className="mission-result">
       <CampaignArt field={m.config.field} completion={win} />
       <div>
+        {win && r.objective && (
+          <div className="operation-cinematic" role="status">
+            <span>
+              {r.objective.type === "defend"
+                ? "▰ ▰ ▰ 지원부대 도착"
+                : "◉ → ○ 적 감시망 차단"}
+            </span>
+            <b>
+              {r.objective.type === "defend"
+                ? "통신망 연결 유지"
+                : "레이더 신호 소실"}
+            </b>
+          </div>
+        )}
         <small>MISSION 0{m.number} / AFTER ACTION REPORT</small>
         <h1>
           {win ? "작전 성공" : "작전 실패"} · {m.title}
@@ -475,9 +514,11 @@ export function MissionResult({
         <p>
           {win
             ? m.epilogue
-            : r.enemyHp > 0 && r.hp > 0
-              ? "40라운드 안에 격파하지 못했습니다. 다음 출격에서 다시 도전하세요."
-              : "차량을 정비하고 같은 임무에 다시 도전할 수 있습니다."}
+            : r.reason
+              ? REASON_TEXT[r.reason]
+              : r.enemyHp > 0 && r.hp > 0
+                ? "40라운드 안에 격파하지 못했습니다. 다음 출격에서 다시 도전하세요."
+                : "차량을 정비하고 같은 임무에 다시 도전할 수 있습니다."}
         </p>
         <div className="campaign-stat-grid">
           <span>
@@ -506,6 +547,17 @@ export function MissionResult({
             보급 보상<b>+{reward}</b>
           </span>
         </div>
+        {r.objective && (
+          <p className="objective-result">
+            {r.objective.type === "defend"
+              ? "통신시설 잔여 HP " +
+                r.objective.hp +
+                " · 보강 회복 " +
+                r.objective.restored
+              : "레이더 잔여 HP " + r.objective.hp}{" "}
+            · 완료 라운드 {r.round} · {r.reason ? REASON_TEXT[r.reason] : ""}
+          </p>
+        )}
         {win && (
           <p>
             해금 기록: {m.unlocks.join(" · ")}
@@ -522,7 +574,12 @@ export function MissionResult({
               {m.number === 3 ? "다음 시대의 이야기" : "다음 임무"}
             </button>
           )}
-          {win && !next && <strong>CHRONICLES COMPLETE · 4/4</strong>}
+          {win && !next && (
+            <strong>
+              FRONTLINE COMPLETE · {MISSIONS.length}/{MISSIONS.length} · 후속
+              작전 준비 중
+            </strong>
+          )}
         </div>
       </div>
     </section>
