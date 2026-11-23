@@ -33,7 +33,9 @@ for (const difficulty of ["easy", "normal", "hard"])
     async ({ page }) => {
       const errors: string[] = [];
       page.on("pageerror", (e) => errors.push(e.message));
-      await page.goto("/");
+      const side = difficulty === "easy" ? "left" : "right";
+      await page.clock.install();
+      await page.goto("/?seed=31&side=" + side);
       await expect(
         page.getByRole("button", { name: "게임 시작" }),
       ).toBeVisible();
@@ -52,8 +54,10 @@ for (const difficulty of ["easy", "normal", "hard"])
       await page.getByLabel("AI 난이도").selectOption(difficulty);
       await page.getByRole("button", { name: "완료" }).click();
       await page.getByRole("button", { name: "게임 시작" }).click();
-      await page.clock.install();
       await page.clock.runFor(100);
+      expect((await snapshot(page)).placement).toBe(side);
+      expect((await snapshot(page)).aiming.guideLevel).toBe("partial");
+      expect((await snapshot(page)).aiming.endpointVisible).toBe(false);
       await expect(
         page.getByText("첫 포격 가이드", { exact: true }),
       ).toBeVisible();

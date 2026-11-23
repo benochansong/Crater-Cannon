@@ -57,6 +57,15 @@ const testSeed =
   new URLSearchParams(location.search).has("seed")
     ? Number(new URLSearchParams(location.search).get("seed"))
     : undefined;
+const testPlacement =
+  import.meta.env.MODE === "test" &&
+  ["left", "right"].includes(
+    new URLSearchParams(location.search).get("side") ?? "",
+  )
+    ? (new URLSearchParams(location.search).get(
+        "side",
+      ) as import("./game/sides").PlayerPlacement)
+    : undefined;
 const timeLabel = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 function App() {
@@ -66,7 +75,7 @@ function App() {
   const [saveFailed, setSaveFailed] = useState(false);
   const [settings, setSettings] = useState(loadSettings);
   const [battle, setBattle] = useState(
-    () => new Battle(settings.difficulty, testSeed),
+    () => new Battle(settings.difficulty, testSeed, undefined, testPlacement),
   );
   const [screen, setScreen] = useState<
     | "menu"
@@ -102,7 +111,11 @@ function App() {
     sound.configure(settings.volume, settings.muted);
     battle.autoEmp = settings.autoEmp;
     renderer.aimGuide = settings.aimGuide;
-    if (settings.aimGuide === "extended" && screen === "battle")
+    if (
+      settings.aimGuide === "beginner" &&
+      screen === "battle" &&
+      !battle.config.training
+    )
       battle.assisted = true;
   }, [settings, sound, battle, renderer, screen]);
   useEffect(() => () => sound.dispose(), [sound]);
@@ -309,7 +322,9 @@ function App() {
     setHint(null);
     sound.unlock();
     sound.stop();
-    setBattle(new Battle(settings.difficulty, testSeed));
+    setBattle(
+      new Battle(settings.difficulty, testSeed, undefined, testPlacement),
+    );
     recorded.current = null;
     setScreen("battle");
     setOverlay(null);
@@ -341,7 +356,9 @@ function App() {
     sound.stop();
     setScreen("menu");
     setOverlay(null);
-    setBattle(new Battle(settings.difficulty, testSeed));
+    setBattle(
+      new Battle(settings.difficulty, testSeed, undefined, testPlacement),
+    );
   }
   const onKey = useEffectEvent((event: KeyboardEvent, down: boolean) => {
     const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
@@ -519,7 +536,10 @@ function App() {
       return;
     }
     aim(
-      (Math.atan2(battle.player.y - 15 - y, Math.max(1, x - battle.player.x)) *
+      (Math.atan2(
+        battle.player.y - 15 - y,
+        Math.max(1, (x - battle.player.x) * battle.player.facing),
+      ) *
         180) /
         Math.PI,
       battle.player.power,
@@ -798,10 +818,16 @@ function App() {
                   <button onClick={() => setOverlay("settings")}>설정</button>
                 </div>
               </div>
-              <div className="field-label player-label">
+              <div
+                className="field-label player-label"
+                style={{ left: (100 * battle.player.x) / WIDTH + "%" }}
+              >
                 BLUE COMET <b>블루 코멧</b>
               </div>
-              <div className="field-label enemy-label">
+              <div
+                className="field-label enemy-label"
+                style={{ left: (100 * battle.ai.x) / WIDTH + "%" }}
+              >
                 RED BADGER <b>레드 배저</b>
               </div>
             </div>
@@ -809,7 +835,9 @@ function App() {
             <>
               <div
                 className={
-                  "hud" + (battle.config.training ? " training-health" : "")
+                  "hud" +
+                  (battle.config.training ? " training-health" : "") +
+                  (battle.player.x > battle.ai.x ? " player-right" : "")
                 }
               >
                 <div
@@ -996,7 +1024,7 @@ function App() {
         <span>한 발의 포탄이 전장의 운명을 바꾼다.</span>
         <div>
           <button onClick={() => setOverlay("help")}>조작 안내</button>
-          <span>PHASE 9 / SMART AIMING SYSTEM</span>
+          <span>PHASE 9.1 / AIM BALANCE & RANDOM SIDES</span>
         </div>
       </footer>
       {screen === "result" && result && !selectedMission && (
@@ -1033,7 +1061,7 @@ function App() {
                     ? "다음 한 발은 전장을 바꿀 수 있어요."
                     : "동시 격파! 두 차량이 함께 쓰러졌습니다."}
             </p>
-            {result.assisted && <p>확장 조준 보조 사용</p>}
+            {result.assisted && <p>초보자 조준 보조 사용</p>}
             <div className="result-stats">
               <div>
                 <span>남은 체력</span>
@@ -1138,13 +1166,14 @@ function App() {
                     })
                   }
                 >
-                  <option value="default">난이도 기본값</option>
+                  <option value="balanced">일반 (추천) · BALANCED</option>
+                  <option value="beginner">초보자 · BEGINNER</option>
+                  <option value="expert">숙련자 · EXPERT</option>
                   <option value="off">조준 가이드 끄기</option>
-                  <option value="extended">확장 조준 가이드</option>
                 </select>
               </label>
               <small className="muted">
-                실제 전투 난이도 기준 · 즉시 적용 · 확장 사용은 경기 기록에 표시
+                AI 난이도와 별개 · 즉시 적용 · 훈련장은 전체 가이드 유지
               </small>
               <label className="setting-row">
                 자동 EMP 방어
@@ -1297,7 +1326,7 @@ function App() {
                       </b>
                       <span>
                         {difficultyNames[r.difficulty]} · {r.shots}발 · 직접
-                        명중 {r.direct}회 {r.assisted && "· 확장 보조 사용"}
+                        명중 {r.direct}회 {r.assisted && "· 초보자 보조 사용"}
                         <small>
                           {new Date(r.date).toLocaleDateString("ko-KR")} · 피해{" "}
                           {r.damage} · {timeLabel(r.seconds)}

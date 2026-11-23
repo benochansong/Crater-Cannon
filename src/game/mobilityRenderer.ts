@@ -6,8 +6,9 @@ export function drawTracks(
   t: Tank,
   era: "ww2" | "modern" = "modern",
   wheels: number[] = [-22, -7.3, 7.4, 22.1],
+  visualFacing = 1,
 ) {
-  const phase = t.mobility.travel / 7;
+  const phase = (t.mobility.travel * visualFacing) / 7;
   c.strokeStyle = "#d6d5b4";
   c.lineWidth = 1.5;
   for (const x of wheels) {
@@ -16,7 +17,7 @@ export function drawTracks(
     c.lineTo(x + Math.cos(phase) * 5, 10 + Math.sin(phase) * 5);
     c.stroke();
   }
-  const offset = ((t.mobility.travel % 9) + 9) % 9;
+  const offset = (((t.mobility.travel * visualFacing) % 9) + 9) % 9;
   c.strokeStyle = "#8e9d89";
   c.lineWidth = 2;
   for (let x = -29 + offset; x < 31; x += 9) {

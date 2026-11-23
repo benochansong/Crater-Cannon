@@ -39,7 +39,7 @@ describe("field repair", () => {
     expect(b.turn).toBe("ai");
   });
   it("rejects full HP, depleted repairs and off-turn actions", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     expect(b.repair()).toBe(false);
     b.player.hp = 20;
     b.player.repairs = 0;
@@ -51,7 +51,7 @@ describe("field repair", () => {
     expect(b.repair("ai")).toBe(false);
   });
   it("uses the same 28 HP for AI", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     b.turn = "ai";
     b.phase = "ai-aim";
     b.ai.hp = 40;
@@ -78,8 +78,8 @@ describe("energy shield", () => {
   it.each(["shell", "crater", "shock", "drone", "missile"] as WeaponId[])(
     "reduces %s damage and disappears after the entire attack",
     (weapon) => {
-      const a = new Battle(),
-        b = new Battle();
+      const a = new Battle("normal", 31, undefined, "left"),
+        b = new Battle("normal", 31, undefined, "left");
       b.ai.shield = true;
       impact(a, weapon);
       impact(b, weapon);
@@ -92,7 +92,7 @@ describe("energy shield", () => {
     },
   );
   it("expires on misses and EMP-disabled attacks, but not on repair", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     b.ai.shield = true;
     impact(b, "shell", "player", null);
     expect(b.ai.shield).toBe(false);
@@ -149,14 +149,14 @@ describe("limited terrain movement", () => {
     expect(b.player.y).toBe(433);
   });
   it("stops at impassable slopes and cannot pass through another vehicle", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     b.terrain.fill(450);
     b.player.y = 433;
     for (let i = 270; i < b.terrain.length; i++) b.terrain[i] = 330;
     expect(b.move(1)).toBe(true);
     run(b, 1.8);
     expect(b.player.x).toBeLessThan(250);
-    const c = new Battle();
+    const c = new Battle("normal", 31, undefined, "left");
     c.terrain.fill(450);
     c.ai.x = c.player.x + 69;
     expect(c.move(1)).toBe(false);
@@ -257,7 +257,7 @@ describe("air support reservation and response", () => {
     expect(b.supportStats.ai.helicopter.shots).toBe(0);
   });
   it("resets support and defense state and enforces a finite match", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     expect(b.player.support).toEqual({
       helicopter: 1,
       bomber: 1,

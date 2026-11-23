@@ -1,0 +1,38 @@
+{
+  "kind": "Paired AI physics audit, mirrored terrain and opposite wind, identical seeded noise; not human win rates",
+  "placementSamples": 10000,
+  "left": 5088,
+  "right": 4912,
+  "summary": [
+    {
+      "difficulty": "easy",
+      "seeds": 30,
+      "samePlans": 30,
+      "leftDirectHits": 7,
+      "rightDirectHits": 7,
+      "leftMeanHorizontalError": 119.14003950879045,
+      "rightMeanHorizontalError": 119.1400395087915,
+      "maxMirrorError": 9.492850949754938e-12
+    },
+    {
+      "difficulty": "normal",
+      "seeds": 30,
+      "samePlans": 30,
+      "leftDirectHits": 7,
+      "rightDirectHits": 7,
+      "leftMeanHorizontalError": 119.25107255342773,
+      "rightMeanHorizontalError": 119.25107255342853,
+      "maxMirrorError": 7.73070496506989e-12
+    },
+    {
+      "difficulty": "hard",
+      "seeds": 30,
+      "samePlans": 30,
+      "leftDirectHits": 2,
+      "rightDirectHits": 2,
+      "leftMeanHorizontalError": 130.06976352324256,
+      "rightMeanHorizontalError": 130.0697635232433,
+      "maxMirrorError": 7.048583938740194e-12
+    }
+  ]
+}

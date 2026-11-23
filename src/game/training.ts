@@ -12,6 +12,7 @@ export function trainingConfig(id: TrainingTarget): BattleConfig {
   return {
     ...FREE_BATTLE,
     training: id,
+    randomSides: false,
     playerName: "사격 훈련",
     enemyName: "TARGET " + id + " · " + t.name,
     weapons: ["shell", "crater", "shock"],

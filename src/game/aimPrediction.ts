@@ -2,22 +2,69 @@ import { launch, advance, advanceMissile, STEP } from "./engine";
 import type { Battle, Impact, Vec } from "./engine";
 import { analyzeImpact } from "./shotHistory";
 import type { ShotReason, ShotSetup } from "./shotHistory";
-export type AimGuideMode = "default" | "off" | "extended";
+export type AimGuideMode = "balanced" | "beginner" | "expert" | "off";
 export type GuideLevel = "full" | "partial" | "short" | "off";
 export function guideLevel(
-  b: Pick<Battle, "difficulty">,
+  b: Pick<Battle, "difficulty"> & Partial<Pick<Battle, "config">>,
   mode: AimGuideMode,
 ): GuideLevel {
+  if (b.config?.training) return "full";
   return mode === "off"
     ? "off"
-    : mode === "extended" || b.difficulty === "easy"
+    : mode === "beginner"
       ? "full"
-      : b.difficulty === "normal"
-        ? "partial"
-        : "short";
+      : mode === "expert"
+        ? "short"
+        : "partial";
+}
+export function migrateAimGuide(value: unknown): AimGuideMode {
+  if (value === "extended") return "beginner";
+  return value === "beginner" || value === "expert" || value === "off"
+    ? value
+    : "balanced";
+}
+export interface GuidePoint extends Vec {
+  t: number;
+  alpha: number;
+}
+export function visibleGuide(
+  p: AimPrediction,
+  level: GuideLevel,
+): GuidePoint[] {
+  if (level === "off") return [];
+  // Display limits only: retain the complete, exact cached prediction internally.
+  // Both time and spatial buffers prevent short shots from revealing the answer.
+  const total = p.steps * STEP;
+  const limit = p.uncertain
+    ? Math.min(0.55, total * 0.5)
+    : level === "partial" && !p.special
+      ? Math.max(0, Math.min(total * 0.67, total - 0.35))
+      : Infinity;
+  const shown: GuidePoint[] = [];
+  for (const q of p.points) {
+    if (q.t > limit) break;
+    if (
+      level === "partial" &&
+      !p.special &&
+      (Math.hypot(q.x - p.setup.target.x, q.y - (p.setup.target.y - 8)) < 100 ||
+        (p.impact && Math.hypot(q.x - p.impact.x, q.y - p.impact.y) < 100))
+    )
+      break;
+    shown.push({ ...q, alpha: 1 });
+  }
+  return shown.map((q, i) => ({
+    ...q,
+    alpha:
+      level === "partial"
+        ? Math.max(
+            0.04,
+            1 - Math.max(0, i / Math.max(1, shown.length - 1) - 0.5) * 1.92,
+          )
+        : 1,
+  }));
 }
 export interface AimPrediction {
-  points: Vec[];
+  points: (Vec & { t: number })[];
   impact: Impact | null;
   apex: Vec;
   range: number | null;
@@ -45,9 +92,9 @@ export function predictAim(b: Battle, short = false): AimPrediction | null {
     muzzle: { x: p.x, y: p.y },
     target: { x: b.targetBody.x, y: b.targetBody.y, side: b.targetBody.side },
   };
-  const points: Vec[] = [{ x: p.x, y: p.y }];
+  const points = [{ x: p.x, y: p.y, t: 0 }];
   let impact: Impact | null = null,
-    apex = { ...points[0] },
+    apex: Vec = { x: p.x, y: p.y },
     steps = 0;
   const targets = b.collisionTargets;
   const limit = short || special ? 75 : Math.ceil(12 / STEP) + 1;
@@ -57,7 +104,7 @@ export function predictAim(b: Battle, short = false): AimPrediction | null {
       : advance(p, b.terrain, targets, b.wind, STEP);
     if (p.y < apex.y) apex = { x: p.x, y: p.y };
     if (steps % 8 === 0 || impact || steps === limit - 1)
-      points.push({ x: p.x, y: p.y });
+      points.push({ x: p.x, y: p.y, t: p.age });
     if (impact) {
       steps++;
       break;
@@ -82,7 +129,7 @@ export class PredictionCache {
   private key = "";
   value: AimPrediction | null = null;
   calculations = 0;
-  get(b: Battle, mode: AimGuideMode = "default") {
+  get(b: Battle, mode: AimGuideMode = "balanced") {
     const level = guideLevel(b, mode);
     if (level === "off" || b.weapon === "drone" || b.airSelection) {
       this.key = "";
@@ -92,6 +139,7 @@ export class PredictionCache {
     const key = [
       level,
       b.weapon,
+      b.player.facing,
       b.player.x,
       b.player.y,
       b.player.angle,

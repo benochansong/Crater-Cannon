@@ -1,3 +1,4 @@
+import { gunRotation } from "./sides";
 import { drawTracks } from "./mobilityRenderer";
 import { drawBoss } from "./operationRenderer";
 import type { Battle, Tank } from "./engine";
@@ -228,7 +229,7 @@ export function drawEraTank(
   c.restore();
   c.save();
   c.translate(0, -15);
-  c.rotate(((blue ? -t.angle : 180 + t.angle) * Math.PI) / 180);
+  c.rotate(gunRotation(t.angle, t.facing));
   c.translate(-t.recoil * 7, 0);
   c.fillStyle = base;
   c.fillRect(0, -4, 43, 8);

@@ -41,11 +41,12 @@ describe("same-physics prediction", () => {
           b.aim(57, 60);
           const predicted = predictAim(b)!;
           const p = launch(b.player, weapon);
-          const points = [{ x: p.x, y: p.y }];
+          const points = [{ x: p.x, y: p.y, t: 0 }];
           let impact: Impact | null = null;
           for (let i = 0; i < 1441; i++) {
             impact = advance(p, b.terrain, b.collisionTargets, b.wind);
-            if (i % 8 === 0 || impact) points.push({ x: p.x, y: p.y });
+            if (i % 8 === 0 || impact)
+              points.push({ x: p.x, y: p.y, t: p.age });
             if (impact) break;
           }
           expect(predicted.points).toEqual(points);
@@ -155,17 +156,17 @@ describe("cache and guide policy", () => {
       mutate();
       expect(c.get(b)).not.toBe(old);
     }
-    expect(c.get(b, "off")).toBeNull();
-    expect(c.get(b, "extended")).not.toBeNull();
+    expect(c.get(b, "off")).not.toBeNull();
+    expect(c.get(b, "beginner")).not.toBeNull();
   });
-  it("follows actual campaign difficulty rather than free-battle preferences", () => {
+  it("keeps balanced guidance independent of campaign difficulty", () => {
     const b = new Battle("hard", 31, MISSIONS[7].config);
-    expect(guideLevel(b, "default")).toBe("short");
-    expect(guideLevel(b, "extended")).toBe("full");
+    expect(guideLevel(b, "balanced")).toBe("partial");
+    expect(guideLevel(b, "beginner")).toBe("full");
     b.difficulty = "normal";
-    expect(guideLevel(b, "default")).toBe("partial");
+    expect(guideLevel(b, "balanced")).toBe("partial");
     b.difficulty = "easy";
-    expect(guideLevel(b, "default")).toBe("full");
+    expect(guideLevel(b, "balanced")).toBe("partial");
   });
   it("starts at the current muzzle after genuine movement", () => {
     const b = practice(),
@@ -177,13 +178,14 @@ describe("cache and guide policy", () => {
     for (let i = 0; i < 30; i++) b.update(STEP);
     const after = c.get(b)!;
     expect(after.setup.muzzle.x).toBeGreaterThan(before.setup.muzzle.x);
-    expect(after.points[0]).toEqual(after.setup.muzzle);
+    expect(after.points[0]).toMatchObject(after.setup.muzzle);
   });
-  it("does not show endpoints with hard default or off", () => {
+  it("keeps exact internal prediction but limits expert mode and disables off", () => {
     const b = new Battle("hard", 31),
       c = new PredictionCache();
-    expect(c.get(b)!.impact).toBeNull();
-    expect(c.get(b)!.steps).toBeLessThanOrEqual(75);
+    expect(c.get(b)!.impact).not.toBeNull();
+    expect(c.get(b, "expert")!.impact).toBeNull();
+    expect(c.get(b, "expert")!.steps).toBeLessThanOrEqual(75);
     expect(c.get(b, "off")).toBeNull();
   });
 });
@@ -299,10 +301,10 @@ describe("training isolation and lessons", () => {
     expect(loadTraining()).toHaveLength(1);
     expect(loadRecords()).toEqual([]);
     expect(map.has("crater.campaign.v1")).toBe(false);
-    map.set("crater.settings", JSON.stringify({ aimGuide: "extended" }));
-    expect(loadSettings().aimGuide).toBe("extended");
+    map.set("crater.settings", JSON.stringify({ aimGuide: "beginner" }));
+    expect(loadSettings().aimGuide).toBe("beginner");
     map.set("crater.settings", JSON.stringify({ aimGuide: "wrong" }));
-    expect(loadSettings().aimGuide).toBe("default");
+    expect(loadSettings().aimGuide).toBe("balanced");
     map.set("crater.training.v1", '[{"shots":99},null]');
     expect(loadTraining()).toEqual([]);
   });

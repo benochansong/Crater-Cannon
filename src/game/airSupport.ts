@@ -38,6 +38,8 @@ export interface AirReservation {
   id: number;
   kind: AirKind;
   owner: Side;
+  facing?: import("./sides").Facing;
+  mirrored?: boolean;
   targetX: number;
   responseStarted: boolean;
 }
@@ -47,7 +49,8 @@ export interface AirOperation extends AirReservation {
   enemyHit: boolean;
 }
 export function makeOperation(reservation: AirReservation): AirOperation {
-  const direction = reservation.owner === "player" ? 1 : -1;
+  const direction =
+    reservation.facing ?? (reservation.owner === "player" ? 1 : -1);
   return {
     ...reservation,
     age: 0,
@@ -56,7 +59,13 @@ export function makeOperation(reservation: AirReservation): AirOperation {
       ? [-24, 0, 24]
       : [-70, 0, 70]
     ).map((offset, i) => {
-      const x = Math.max(25, Math.min(1255, reservation.targetX + offset));
+      const x = Math.max(
+        25,
+        Math.min(
+          1255,
+          reservation.targetX + offset * (reservation.mirrored ? -1 : 1),
+        ),
+      );
       return {
         x,
         time:
@@ -76,7 +85,7 @@ export function airDamage(kind: AirKind, distance: number) {
       );
 }
 export function airPosition(a: AirOperation) {
-  const dir = a.owner === "player" ? 1 : -1,
+  const dir = a.facing ?? (a.owner === "player" ? 1 : -1),
     start = dir === 1 ? -220 : 1500,
     end = dir === 1 ? 1500 : -220;
   if (a.kind !== "helicopter")

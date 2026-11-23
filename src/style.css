@@ -3216,3 +3216,13 @@ h2 {
 .arena-footer {
   pointer-events: none;
 }
+
+.hud.player-right .pilot-card:not(.enemy) {
+  order: 3;
+}
+.hud.player-right .wind-card {
+  order: 2;
+}
+.hud.player-right .pilot-card.enemy {
+  order: 1;
+}

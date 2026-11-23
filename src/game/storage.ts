@@ -1,3 +1,4 @@
+import { migrateAimGuide } from "./aimPrediction";
 import type { BattleResult, Difficulty } from "./engine";
 export interface Settings {
   volume: number;
@@ -13,15 +14,13 @@ export const defaults: Settings = {
   shake: true,
   autoEmp: false,
   difficulty: "normal",
-  aimGuide: "default",
+  aimGuide: "balanced",
 };
 export function loadSettings(): Settings {
   try {
     const v = JSON.parse(localStorage.getItem("crater.settings") || "{}");
     return {
-      aimGuide: ["default", "off", "extended"].includes(v.aimGuide)
-        ? v.aimGuide
-        : "default",
+      aimGuide: migrateAimGuide(v.aimGuide),
       volume:
         typeof v.volume === "number" && Number.isFinite(v.volume)
           ? Math.max(0, Math.min(1, v.volume))

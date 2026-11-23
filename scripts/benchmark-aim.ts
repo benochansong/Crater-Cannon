@@ -45,7 +45,7 @@ const report = {
   cacheCalculations: cache.calculations,
 };
 writeFileSync(
-  "docs/performance-phase9.json",
+  process.argv[2] ?? "docs/performance-phase9.json",
   JSON.stringify(report, null, 2) + "\n",
 );
 console.log(report);

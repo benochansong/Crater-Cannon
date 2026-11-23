@@ -1,12 +1,30 @@
 // Read-only QA surface, attached only by the explicitly selected Vite test mode.
+import { guideLevel, visibleGuide } from "./aimPrediction";
 import type { Battle } from "./engine";
 import type { Renderer } from "./renderer";
 export function attachQA(battle: Battle, renderer: Renderer) {
   const target = window as unknown as { __CRATER_QA__?: () => unknown };
   target.__CRATER_QA__ = () => ({
     config: structuredClone(battle.config),
+    placement: battle.placement,
     aiming: {
       level: renderer.aimGuide,
+      guideLevel: guideLevel(battle, renderer.aimGuide),
+      visible:
+        battle.phase === "aim" && renderer.prediction.value
+          ? visibleGuide(
+              renderer.prediction.value,
+              guideLevel(battle, renderer.aimGuide),
+            )
+          : [],
+      endpointVisible:
+        battle.phase === "aim" &&
+        !renderer.prediction.value?.impact?.escaped &&
+        guideLevel(battle, renderer.aimGuide) === "full" &&
+        !!renderer.prediction.value?.impact &&
+        !renderer.prediction.value.uncertain &&
+        !renderer.prediction.value.special,
+      historyMarkers: Math.min(1, battle.shotHistory.length),
       prediction: structuredClone(renderer.prediction.value),
       calculations: renderer.prediction.calculations,
     },

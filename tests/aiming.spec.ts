@@ -139,7 +139,7 @@ test("Firing range: lessons, five real predictions, three targets, records and r
   await expect(page.getByText(/최근 훈련: 5발/)).toBeVisible();
   expect(errors).toEqual([]);
 });
-test("Guide settings persist and use actual mission difficulty; movement refreshes cache", async ({
+test("Guide settings persist independently of mission difficulty; movement refreshes cache", async ({
   page,
 }) => {
   await page.clock.install();
@@ -152,10 +152,10 @@ test("Guide settings persist and use actual mission difficulty; movement refresh
   await page.getByRole("button", { name: "완료" }).click();
   await page.getByRole("button", { name: "게임 시작" }).click();
   await page.clock.runFor(400);
-  await expect(page.getByLabel("조준 분석")).toContainText("방향 가이드");
-  expect((await snap(page)).aiming.prediction.impact).toBeNull();
+  await expect(page.getByLabel("조준 분석")).toContainText("BALANCED AIM");
+  expect((await snap(page)).aiming.endpointVisible).toBe(false);
   await page.getByRole("button", { name: "설정", exact: true }).first().click();
-  await page.getByLabel("조준 보조").selectOption("extended");
+  await page.getByLabel("조준 보조").selectOption("beginner");
   await page.getByRole("button", { name: "완료" }).click();
   await page.clock.runFor(100);
   expect((await snap(page)).assisted).toBe(true);
@@ -180,7 +180,7 @@ test("Guide settings persist and use actual mission difficulty; movement refresh
   await page.reload();
   await page.getByRole("button", { name: "설정", exact: true }).first().click();
   await expect(page.getByLabel("조준 보조")).toHaveValue("off");
-  await page.getByLabel("조준 보조").selectOption("default");
+  await page.getByLabel("조준 보조").selectOption("balanced");
   await page.getByRole("button", { name: "완료" }).click();
   await page.getByRole("button", { name: /스토리 캠페인/ }).click();
   await page
@@ -190,14 +190,14 @@ test("Guide settings persist and use actual mission difficulty; movement refresh
     .click();
   await page.getByRole("button", { name: "작전 시작" }).click();
   await page.clock.runFor(200);
-  await expect(page.getByLabel("조준 분석")).toContainText("전체 예측");
+  await expect(page.getByLabel("조준 분석")).toContainText("BALANCED AIM");
   expect((await snap(page)).aiming.prediction.impact).not.toBeNull();
   await page.screenshot({
     path: "test-results/phase9-campaign-guide.png",
     fullPage: true,
   });
 });
-test("Mobile training remains operable and shot history keeps three world-space markers", async ({
+test("Mobile training remains operable and shot history keeps three records and one world-space marker", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -211,6 +211,7 @@ test("Mobile training remains operable and shot history keeps three world-space 
   }
   const s = await snap(page);
   expect(s.history.map((r: any) => r.sequence)).toEqual([4, 3, 2]);
+  expect(s.aiming.historyMarkers).toBe(1);
   await expect(page.getByLabel("조준 분석")).toContainText("이전 실제 사격");
   const size = await page.evaluate(() => ({
     scroll: document.documentElement.scrollWidth,

@@ -349,7 +349,7 @@ export function CampaignSelect({
                     ? "완료 · 최고 등급 " +
                       progress.grades[m.id] +
                       (progress.assisted.includes(m.id)
-                        ? " · 확장 보조 사용 이력"
+                        ? " · 초보자 보조 사용 이력"
                         : "")
                     : locked
                       ? "이전 임무를 완료하면 해금"
@@ -520,7 +520,7 @@ export function MissionResult({
           </div>
         )}
         <small>MISSION 0{m.number} / AFTER ACTION REPORT</small>
-        {r.assisted && <p>확장 조준 보조 사용</p>}
+        {r.assisted && <p>초보자 조준 보조 사용</p>}
         <h1>
           {win ? "작전 성공" : "작전 실패"} · {m.title}
         </h1>

@@ -22,6 +22,8 @@ import type {
   MissionReason,
 } from "./objectives";
 import { FREE_BATTLE, ERA_WEAPONS, ERA_SUPPORTS } from "./eras";
+import { choosePlayerSide, facingTarget, mirrorTerrain } from "./sides";
+import type { Facing, PlayerPlacement } from "./sides";
 import { analyzeImpact } from "./shotHistory";
 import type { ShotSetup, ShotRecord } from "./shotHistory";
 import { newTrainingStats, countTraining } from "./training";
@@ -194,6 +196,7 @@ export function weaponInfo(id: WeaponId, era: Era): Weapon {
   return w;
 }
 export interface Tank extends Vec {
+  facing: Facing;
   width?: number;
   height?: number;
   side: Side;
@@ -283,6 +286,7 @@ export interface BattleResult extends Stats {
   date: string;
 }
 export interface GameEvent extends Vec {
+  facing?: Facing;
   facility?: boolean;
   type:
     | "shot"
@@ -369,7 +373,7 @@ export function carve(
 }
 export function muzzle(tank: Tank): Vec {
   const a = (tank.angle * Math.PI) / 180,
-    direction = tank.side === "player" ? 1 : -1;
+    direction = tank.facing;
   return {
     x: tank.x + Math.cos(a) * 43 * direction,
     y: tank.y - 15 - Math.sin(a) * 43,
@@ -381,7 +385,7 @@ export function launch(tank: Tank, weapon: WeaponId): Projectile {
     speed = 180 + tank.power * 5;
   return {
     ...pos,
-    vx: Math.cos(a) * speed * (tank.side === "player" ? 1 : -1),
+    vx: Math.cos(a) * speed * tank.facing,
     vy: -Math.sin(a) * speed,
     age: 0,
     owner: tank.side,
@@ -474,7 +478,10 @@ export function solveShot(
     score = Infinity;
   for (let angle = 22; angle <= 78; angle += 4)
     for (let power = 25; power <= 100; power += 3) {
-      const p = launch({ ...tank, angle, power }, "shell");
+      const p = launch(
+        { ...tank, facing: facingTarget(tank.x, target.x), angle, power },
+        "shell",
+      );
       let hit: Impact | null = null;
       for (let n = 0; n < 1441 && !hit; n++)
         hit = advance(p, terrain, [tank, target, ...obstacles], wind);
@@ -552,7 +559,12 @@ export function planAI(
   const plan = solveShot(tank, target, terrain, wind, obstacles);
   // The estimate improves from observed landing error; the next wind is never sampled here.
   if (memory.lastMiss !== null)
-    memory.bias = clamp(memory.bias + memory.lastMiss * p.correction, -24, 24);
+    memory.bias = clamp(
+      memory.bias -
+        memory.lastMiss * facingTarget(tank.x, target.x) * p.correction,
+      -24,
+      24,
+    );
   memory.lastMiss = null;
   plan.angle = clamp(plan.angle + (random() - 0.5) * p.angleNoise, 10, 80);
   plan.power = clamp(
@@ -612,6 +624,11 @@ const weaponStats = () =>
     Stats
   >;
 export class Battle {
+  readonly placement: PlayerPlacement;
+  private updateFacing() {
+    this.player.facing = facingTarget(this.player.x, this.ai.x);
+    this.ai.facing = facingTarget(this.ai.x, this.player.x);
+  }
   assisted = false;
   shotHistory: ShotRecord[] = [];
   specialHistory: ShotRecord[] = [];
@@ -869,7 +886,17 @@ export class Battle {
     public difficulty: Difficulty = "normal",
     public seed = Math.floor(Math.random() * 1e9),
     public readonly config: BattleConfig = FREE_BATTLE,
+    placement?: PlayerPlacement,
   ) {
+    const randomSides =
+      config.randomSides &&
+      !config.missionId &&
+      !config.training &&
+      !config.objective &&
+      !config.boss;
+    this.placement = randomSides
+      ? (placement ?? choosePlayerSide(seed))
+      : "left";
     this.random = seeded(seed);
     this.terrain = makeTerrain(this.random);
     if (config.field !== "valley") {
@@ -899,12 +926,15 @@ export class Battle {
           ? 470 - 140 * Math.exp(-Math.pow((x - 1000) / 175, 4))
           : 470,
       );
+    if (this.placement === "right") this.terrain = mirrorTerrain(this.terrain);
     this.originalTerrain = this.terrain.slice();
     this.mobilityRandom = seeded(this.seed ^ 0x763831);
+    const place = (x: number) => (this.placement === "right" ? WIDTH - x : x);
     this.tanks = [
-      this.makeTank("player", config.spawns?.player ?? 210),
-      this.makeTank("ai", config.spawns?.ai ?? 1070),
+      this.makeTank("player", place(config.spawns?.player ?? 210)),
+      this.makeTank("ai", place(config.spawns?.ai ?? 1070)),
     ];
+    this.updateFacing();
     if (config.objective)
       this.facility = createFacility(config.objective, this.terrain);
     if (config.objective?.type === "destroy-objective")
@@ -1154,6 +1184,7 @@ export class Battle {
   private makeTank(side: Side, x: number): Tank {
     return {
       side,
+      facing: side === "player" ? 1 : -1,
       x,
       y: support(this.terrain, x),
       hp: clamp(this.config.initialHp?.[side] ?? 100, 1, 100),
@@ -1469,7 +1500,7 @@ export class Battle {
         let score = -Math.abs(Math.abs(x - this.player.x) - 700) * 0.025;
         if (this.difficulty !== "easy") score += (this.ai.y - height) * 0.35;
         if (this.difficulty === "hard") {
-          const ahead = ground(this.terrain, x - 50);
+          const ahead = ground(this.terrain, x + this.ai.facing * 50);
           score -= Math.max(0, height - ahead - 25) * 0.5;
         }
         return { direction, distance: Math.abs(x - this.ai.x), score };
@@ -1569,6 +1600,8 @@ export class Battle {
       id: ++this.airSequence,
       kind,
       owner: side,
+      facing: this.tankFor(side).facing,
+      mirrored: this.placement === "right",
       targetX: clamp(x, 35, WIDTH - 35),
       responseStarted: false,
     };
@@ -1854,6 +1887,7 @@ export class Battle {
       this.result
     )
       return false;
+    this.updateFacing();
     const enemy = tank.side === "player" ? this.ai : this.player;
     if (enemy.smoke) {
       tank.angle = clamp(tank.angle + (this.random() - 0.5) * 8, 10, 80);
@@ -1942,6 +1976,7 @@ export class Battle {
       weapon,
       side: tank.side,
       angle: tank.angle,
+      facing: tank.facing,
     });
     return true;
   }
@@ -2065,6 +2100,7 @@ export class Battle {
         0.3,
       );
     }
+    this.updateFacing();
     if (this.phase === "action" && this.action) {
       const a = this.action,
         t = this.tankFor(a.owner);
@@ -2293,7 +2329,7 @@ export class Battle {
         Math.max(0, 1 - distance / (WEAPONS[weapon].radius + 25));
       if (!this.config.training)
         t.vx +=
-          Math.sign(t.x - hit.x || (owner === "player" ? 1 : -1)) * force * 5;
+          Math.sign(t.x - hit.x || this.tankFor(owner).facing) * force * 5;
     }
     if (this.facility && this.facility.hp > 0) {
       const f = this.facility,

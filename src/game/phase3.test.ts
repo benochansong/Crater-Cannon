@@ -102,7 +102,7 @@ describe("directly controlled drone", () => {
 });
 describe("limited guided missile", () => {
   it("requires an enemy target and uses exactly one missile", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     b.select("missile");
     expect(b.fire()).toBe(false);
     expect(b.player.ammo.missile).toBe(2);
@@ -140,7 +140,7 @@ describe("limited guided missile", () => {
     },
   );
   it("turns at a bounded rate and stops tracking after 3.2 seconds", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     const p = launch(b.player, "missile");
     p.guided = true;
     p.target = "ai";
@@ -157,7 +157,7 @@ describe("limited guided missile", () => {
     expect(p.vy).toBe(vy);
   });
   it("still collides with terrain and does not teleport to its target", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     const p = launch(b.player, "missile");
     p.x = 600;
     p.y = 500;
@@ -170,7 +170,7 @@ describe("limited guided missile", () => {
     expect(Math.abs(p.x - 600)).toBeLessThan(2);
   });
   it("a jammed missile keeps its velocity and uses the shared unguided physics", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     enemyAttack(b, "missile");
     const before = { ...b.projectile!, trail: [] };
     expect(b.useEmp("player")).toBe(true);
@@ -187,12 +187,12 @@ describe("limited guided missile", () => {
 });
 describe("fair EMP reaction", () => {
   it("offers at least two seconds and cannot affect regular shells", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     b.fire();
     expect(b.canEmp("player")).toBe(false);
     expect(b.useEmp("ai")).toBe(false);
     expect(b.ai.emp).toBe(2);
-    const c = new Battle();
+    const c = new Battle("normal", 31, undefined, "left");
     enemyAttack(c, "missile");
     run(c, 2);
     expect(c.canEmp("player")).toBe(true);
@@ -201,7 +201,7 @@ describe("fair EMP reaction", () => {
     expect(c.useEmp("player")).toBe(false);
   });
   it("disables drone damage, spends one charge and never consumes an attack turn", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     enemyAttack(b, "drone");
     expect(b.useEmp("player")).toBe(true);
     expect(b.useEmp("player")).toBe(false);
@@ -214,7 +214,7 @@ describe("fair EMP reaction", () => {
     expect(b.round).toBe(2);
   });
   it("enforces exactly two defenses across separate attacks", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     for (let i = 0; i < 2; i++) {
       enemyAttack(b, "drone");
       expect(b.useEmp("player")).toBe(true);
@@ -236,7 +236,7 @@ describe("fair EMP reaction", () => {
     expect(b.stats.damage).toBe(0);
   });
   it("optional automatic defense reacts at 0.9 seconds and respects ammo", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     b.autoEmp = true;
     enemyAttack(b, "drone");
     run(b, 0.6);
@@ -254,7 +254,7 @@ describe("AI estimation and arsenal limits", () => {
     expect(AI_PROFILE.normal.initialBias).toBeGreaterThan(
       AI_PROFILE.hard.initialBias,
     );
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     const memory = { bias: -10, shots: 1, lastMiss: 120 };
     planAI(b.ai, b.player, b.terrain, b.wind, "normal", memory, () => 0.5);
     expect(memory.bias).toBeGreaterThan(-10);
@@ -270,7 +270,7 @@ describe("AI estimation and arsenal limits", () => {
     expect(b.projectile!.x).toBe(expected.x);
   });
   it("prefers electronics more often once enemy EMP runs out and never chooses exhausted ammo", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     let defended = 0,
       unprotected = 0;
     for (let i = 1; i <= 200; i++) {
@@ -302,7 +302,7 @@ describe("AI estimation and arsenal limits", () => {
     ]);
   });
   it("resets electronics, defenses, input and targeting on retry", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     expect(b.player.emp).toBe(2);
     expect(b.ai.emp).toBe(2);
     expect(b.player.ammo.drone).toBe(2);

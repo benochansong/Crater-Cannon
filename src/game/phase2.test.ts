@@ -72,7 +72,7 @@ describe("Phase 2 camera and effects", () => {
     vi.unstubAllGlobals();
   });
   it("retains original grass heights while destruction changes actual terrain", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     const original = b.originalTerrain[200];
     b.terrain[200] += 50;
     expect(b.originalTerrain[200]).toBe(original);
@@ -80,7 +80,7 @@ describe("Phase 2 camera and effects", () => {
 });
 describe("fair tactical AI", () => {
   it("uses shells for finishing shots and low own health", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     b.player.hp = 30;
     expect(chooseWeapon(b.ai, b.player, b.terrain, "hard", () => 0)).toBe(
       "shell",
@@ -92,7 +92,7 @@ describe("fair tactical AI", () => {
     );
   });
   it("uses shock on slopes, crater on high ground, and respects ammo", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     for (let x = 0; x <= WIDTH; x++) b.terrain[x] = 350 + x * 0.3;
     expect(chooseWeapon(b.ai, b.player, b.terrain, "hard", () => 0)).toBe(
       "shock",

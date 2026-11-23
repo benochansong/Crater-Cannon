@@ -49,7 +49,7 @@ function until(b: Battle, predicate: () => boolean, limit = 3000) {
 }
 describe("ballistics", () => {
   it("launches exactly along the rendered barrel from its muzzle", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     for (const tank of b.tanks) {
       const p = launch(tank, "shell");
       expect(p.x).toBe(muzzle(tank).x);
@@ -97,7 +97,7 @@ describe("ballistics", () => {
     expect(hit?.x).toBeLessThan(603);
   });
   it("distinguishes vehicle from terrain collisions", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     const p: Projectile = {
       x: b.ai.x - 50,
       y: b.ai.y - 10,
@@ -161,7 +161,7 @@ describe("terrain and weapons", () => {
     expect(blastDamage(120, "shell")).toBe(0);
   });
   it("settles tanks onto changed terrain without penetration", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     const previous = b.ai.y;
     carve(b.terrain, b.ai.x, ground(b.terrain, b.ai.x), "crater");
     for (let i = 0; i < 150; i++) b.update(1 / 60);
@@ -173,7 +173,7 @@ describe("terrain and weapons", () => {
       );
   });
   it("shock pushes vehicles and settles them at their new position", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     const x = b.ai.x;
     forceImpact(b, "shock", x - 8);
     until(b, () => b.phase === "ai-aim");
@@ -184,7 +184,7 @@ describe("terrain and weapons", () => {
 });
 describe("battle lifecycle", () => {
   it("locks repeated firing and aim during flight", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     expect(b.fire()).toBe(true);
     expect(b.fire()).toBe(false);
     b.aim(80, 100);
@@ -192,7 +192,7 @@ describe("battle lifecycle", () => {
     expect(b.stats.shots).toBe(1);
   });
   it("limits special ammo to two shots and preserves unlimited shells", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     b.select("crater");
     b.fire();
     expect(b.player.ammo.crater).toBe(1);
@@ -208,7 +208,7 @@ describe("battle lifecycle", () => {
     expect(b.player.ammo.shell).toBe(Infinity);
   });
   it("applies one explosion and records actual damage exactly once", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     b.ai.hp = 10;
     forceImpact(b, "shell");
     b.guardTime = 0; // Collision fixture starts after the response window.
@@ -238,13 +238,13 @@ describe("battle lifecycle", () => {
     expect(judge(1, 1)).toBeNull();
   });
   it("finishes with correct result and fresh restart state", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     b.ai.hp = 1;
     forceImpact(b, "shell");
     until(b, () => b.phase === "over");
     expect(b.result?.outcome).toBe("victory");
     expect(b.fire()).toBe(false);
-    const next = new Battle();
+    const next = new Battle("normal", 31, undefined, "left");
     expect(next.player.hp).toBe(100);
     expect(next.ai.hp).toBe(100);
     expect(next.stats.shots).toBe(0);

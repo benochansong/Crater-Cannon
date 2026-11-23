@@ -1,0 +1,94 @@
+{
+  "engine": "Firefox via Playwright",
+  "fullSuite": {
+    "tests": 32,
+    "passed": 32,
+    "minutes": 17.4
+  },
+  "shots": [
+    {
+      "side": "left",
+      "predicted": {
+        "x": 1043.6880711120982,
+        "y": 410.1544307333801,
+        "direct": "ai",
+        "escaped": false
+      },
+      "actual": {
+        "x": 1043.6880711120982,
+        "y": 410.1544307333801,
+        "direct": "ai",
+        "escaped": false
+      },
+      "errors": []
+    },
+    {
+      "side": "right",
+      "predicted": {
+        "x": 238,
+        "y": 405.9831200479665,
+        "direct": "ai",
+        "escaped": false
+      },
+      "actual": {
+        "x": 238,
+        "y": 405.9831200479665,
+        "direct": "ai",
+        "escaped": false
+      },
+      "errors": []
+    }
+  ],
+  "battles": [
+    {
+      "shots": 6,
+      "hits": 6,
+      "direct": 6,
+      "damage": 100,
+      "assisted": false,
+      "round": 6,
+      "id": "31-1795434254912",
+      "outcome": "victory",
+      "hp": 82,
+      "enemyHp": 0,
+      "seconds": 77,
+      "difficulty": "easy",
+      "date": "2026-11-23T11:44:14.912Z"
+    },
+    {
+      "shots": 9,
+      "hits": 9,
+      "direct": 9,
+      "damage": 156,
+      "assisted": false,
+      "round": 9,
+      "id": "31-1795434369081",
+      "outcome": "victory",
+      "hp": 38,
+      "enemyHp": 0,
+      "seconds": 115,
+      "difficulty": "normal",
+      "date": "2026-11-23T11:46:09.081Z"
+    },
+    {
+      "shots": 9,
+      "hits": 9,
+      "direct": 9,
+      "damage": 156,
+      "assisted": false,
+      "round": 9,
+      "id": "31-1795434493660",
+      "outcome": "victory",
+      "hp": 24,
+      "enemyHp": 0,
+      "seconds": 122,
+      "difficulty": "hard",
+      "date": "2026-11-23T11:48:13.660Z"
+    }
+  ],
+  "airCaptureRerun": {
+    "tests": 3,
+    "passed": 3,
+    "minutes": 1.9
+  }
+}

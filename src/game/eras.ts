@@ -13,6 +13,7 @@ export type Field =
   | "convoy"
   | "citadel";
 export interface BattleConfig {
+  randomSides?: boolean;
   training?: import("./training").TrainingTarget;
   objective?: ObjectiveConfig;
   boss?: { rounds: number };
@@ -38,6 +39,7 @@ export interface BattleConfig {
   openingDrone?: boolean;
 }
 export const FREE_BATTLE: BattleConfig = {
+  randomSides: true,
   initialHp: { player: 100, ai: 100 },
   winCondition: "hp-verdict",
   era: "modern",

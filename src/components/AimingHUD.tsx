@@ -24,16 +24,19 @@ export function AimingHUD({
           <small>
             {
               {
-                full: "전체 예측",
-                partial: "부분 예측 · 65%",
-                short: "방향 가이드",
+                full: b.config.training
+                  ? "훈련 · 전체 예측"
+                  : "초보자 · BEGINNER",
+                partial: "일반 · BALANCED AIM",
+                short: "숙련자 · EXPERT",
                 off: "가이드 꺼짐",
               }[level]
             }
           </small>
         </b>
         <span>
-          {b.assisted ? "확장 보조 사용 · " : ""}현재 상태 기준 예상 · 월드 거리
+          {b.assisted ? "초보자 보조 사용 · " : ""}현재 상태 기준 예상 · 월드
+          거리
         </span>
       </div>
       <div className="aim-metrics">
@@ -82,7 +85,7 @@ export function AimingHUD({
                     : "예상 · " +
                       shotMessage(p.reason!, p.impact.x - p.setup.target.x)
                   : level === "partial"
-                    ? "약 65% 궤적과 착탄 범위 · 정확한 수치는 숨김"
+                    ? "약 67% 방향 궤적 · 끝부분은 흐리게, 실제 사격 후 오차 분석"
                     : level === "short"
                       ? "방향과 바람을 읽고 이전 착탄으로 보정하세요."
                       : "조준 가이드가 꺼져 있습니다."}
@@ -103,7 +106,8 @@ export function AimingHUD({
             <small>
               #{previous.sequence} · {previous.angle.toFixed(1)}° / 세기{" "}
               {previous.power.toFixed(1)} / 바람 {previous.wind} · 발사 당시
-              목표 기준
+              목표 기준 · 착탄 오차{" "}
+              {previous.error === null ? "—" : Math.round(previous.error)}
             </small>
           </>
         ) : (

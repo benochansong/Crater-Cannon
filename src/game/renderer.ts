@@ -1,4 +1,5 @@
-import { PredictionCache, guideLevel } from "./aimPrediction";
+import { gunRotation } from "./sides";
+import { PredictionCache, guideLevel, visibleGuide } from "./aimPrediction";
 import type { AimGuideMode } from "./aimPrediction";
 import { drawOperationField } from "./operationRenderer";
 import { drawFacility } from "./facilityRenderer";
@@ -37,7 +38,7 @@ interface Label {
   color: string;
 }
 export class Renderer {
-  aimGuide: AimGuideMode = "default";
+  aimGuide: AimGuideMode = "balanced";
   prediction = new PredictionCache();
   particles: Particle[] = [];
   bursts: Burst[] = [];
@@ -154,10 +155,10 @@ export class Renderer {
       this.flashes.push({
         x: e.x,
         y: e.y,
-        angle:
-          ((e.side === "player" ? -(e.angle ?? 45) : 180 + (e.angle ?? 45)) *
-            Math.PI) /
-          180,
+        angle: gunRotation(
+          e.angle ?? 45,
+          e.facing ?? (e.side === "player" ? 1 : -1),
+        ),
         age: 0,
       });
       this.shake = Math.max(this.shake, 3);
@@ -278,15 +279,10 @@ export class Renderer {
         ? this.prediction.get(game, this.aimGuide)
         : null;
     const level = guideLevel(game, this.aimGuide);
-    const visible = preview?.points.slice(
-      0,
-      preview.uncertain
-        ? 10
-        : level === "partial"
-          ? Math.ceil(preview.points.length * 0.65)
-          : undefined,
-    );
-    const peak = visible?.reduce((a, b) => (a.y < b.y ? a : b));
+    const visible = preview ? visibleGuide(preview, level) : [];
+    const peak = visible.length
+      ? visible.reduce((a, b) => (a.y < b.y ? a : b))
+      : null;
     this.camera.update(
       game.projectile ??
         game.drone ??
@@ -721,6 +717,7 @@ export class Renderer {
     );
     ctx.save();
     ctx.rotate(t.tilt);
+    ctx.scale(t.facing, 1);
     ctx.fillStyle = "#243c3c";
     ctx.strokeStyle = "#152e36";
     ctx.lineWidth = 3;
@@ -738,7 +735,7 @@ export class Renderer {
       ctx.arc(i, 11, 3, 0, 7);
       ctx.fill();
     }
-    drawTracks(ctx, t);
+    drawTracks(ctx, t, "modern", undefined, t.facing);
     ctx.fillStyle = dark;
     ctx.beginPath();
     ctx.roundRect(-34, -9, 68, 17, 5);
@@ -760,7 +757,11 @@ export class Renderer {
     ctx.fillStyle = "#fff3c4";
     ctx.font = "bold 12px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(blue ? "01" : "02", -16, -6);
+    ctx.save();
+    ctx.translate(-16, -6);
+    ctx.scale(t.facing, 1);
+    ctx.fillText(blue ? "01" : "02", 0, 0);
+    ctx.restore();
     ctx.fillStyle = "#1f3843";
     ctx.fillRect(12, -15, 10, 7);
     ctx.fillStyle = "#fff6bf";
@@ -768,7 +769,7 @@ export class Renderer {
     ctx.restore();
     ctx.save();
     ctx.translate(0, -15);
-    ctx.rotate(((blue ? -t.angle : 180 + t.angle) * Math.PI) / 180);
+    ctx.rotate(gunRotation(t.angle, t.facing));
     ctx.translate(-t.recoil * 9, 0);
     ctx.fillStyle = dark;
     ctx.beginPath();
@@ -793,12 +794,12 @@ export class Renderer {
     ctx.strokeStyle = "#293d41";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(-20, -15);
-    ctx.lineTo(-23, -41);
+    ctx.moveTo(-20 * t.facing, -15);
+    ctx.lineTo(-23 * t.facing, -41);
     ctx.stroke();
     ctx.fillStyle = "#ffe5a0";
     ctx.beginPath();
-    ctx.arc(-23, -42, 2, 0, 7);
+    ctx.arc(-23 * t.facing, -42, 2, 0, 7);
     ctx.fill();
     if (t.hp < 35) {
       ctx.fillStyle = "#56615b66";
@@ -815,55 +816,52 @@ export class Renderer {
     const p = this.prediction.get(game, this.aimGuide),
       level = guideLevel(game, this.aimGuide);
     if (!p) return;
-    const points = p.points.slice(
-      0,
-      p.uncertain
-        ? 10
-        : level === "partial"
-          ? Math.ceil(p.points.length * 0.65)
-          : undefined,
-    );
+    const points = visibleGuide(p, level);
     ctx.save();
     ctx.strokeStyle = "#8fe8f7";
-    ctx.globalAlpha = p.uncertain ? 0.4 : 0.78;
     ctx.lineWidth = 2.5;
     ctx.setLineDash([8, 7]);
-    ctx.beginPath();
-    points.forEach((v, i) => (i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)));
-    ctx.stroke();
+    let distance = 0;
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1],
+        b = points[i];
+      ctx.globalAlpha = (p.uncertain ? 0.4 : 0.78) * b.alpha;
+      ctx.lineDashOffset = -distance;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+      distance += Math.hypot(b.x - a.x, b.y - a.y);
+    }
+    ctx.globalAlpha = 0.78;
+    ctx.lineDashOffset = 0;
     ctx.setLineDash([]);
     if (
       p.impact &&
       !p.impact.escaped &&
-      level !== "short" &&
+      level === "full" &&
       !p.special &&
       !p.uncertain
     ) {
-      const approximate = level === "partial" || p.uncertain;
-      const x = approximate ? Math.round(p.impact.x / 50) * 50 : p.impact.x;
-      const y = approximate ? ground(game.terrain, x) : p.impact.y;
+      const { x, y } = p.impact;
       ctx.strokeStyle =
-        p.reason === "direct" && !approximate
+        p.reason === "direct"
           ? "#c5ff91"
           : p.reason === "terrain" || p.reason === "obstacle"
             ? "#ffbd76"
             : "#8fe8f7";
       ctx.beginPath();
-      ctx.ellipse(x, y, approximate ? 35 : 10, approximate ? 12 : 10, 0, 0, 7);
+      ctx.ellipse(x, y, 10, 10, 0, 0, 7);
       ctx.stroke();
       ctx.font = "bold 13px sans-serif";
       ctx.textAlign = "center";
       ctx.fillStyle = ctx.strokeStyle;
       ctx.fillText(
-        approximate
-          ? p.reason === "terrain" || p.reason === "obstacle"
-            ? "⚠ 차폐 범위"
-            : "예상 범위"
-          : p.reason === "direct"
-            ? "예상 직접 명중"
-            : p.reason === "terrain" || p.reason === "obstacle"
-              ? "⚠ 차폐"
-              : "예상 착탄",
+        p.reason === "direct"
+          ? "예상 직접 명중"
+          : p.reason === "terrain" || p.reason === "obstacle"
+            ? "⚠ 차폐"
+            : "예상 착탄",
         x,
         y - (p.reason === "direct" ? 70 : 22),
       );
@@ -874,7 +872,7 @@ export class Renderer {
     ctx.save();
     ctx.font = "bold 13px sans-serif";
     ctx.textAlign = "center";
-    game.shotHistory.forEach((s, i) => {
+    game.shotHistory.slice(0, 1).forEach((s, i) => {
       if (!s.impact) return;
       const x = Math.max(20, Math.min(WIDTH - 20, s.impact.x));
       const y = Math.min(s.impact.y, ground(game.terrain, x)) - 32 - i * 17;
@@ -892,11 +890,7 @@ export class Renderer {
       ctx.moveTo(x, y - 5);
       ctx.lineTo(x, y + 5);
       ctx.stroke();
-      ctx.fillText(
-        s.escaped ? "이탈 #" + s.sequence : "이전 착탄 #" + s.sequence,
-        x,
-        y - 10,
-      );
+      ctx.fillText(s.escaped ? "이탈" : "이전 탄", x, y - 10);
     });
     ctx.restore();
   }

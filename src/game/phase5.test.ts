@@ -72,7 +72,7 @@ describe("era capabilities at the engine boundary", () => {
     },
   );
   it("free battle keeps all modern weapons and excludes period weapons", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     expect(b.allowedWeapons).toEqual(FREE_BATTLE.weapons);
     b.player.ammo.ap = 99;
     b.select("ap");
@@ -144,7 +144,7 @@ describe("survival and fortress mechanics", () => {
     expect(b.activateShield()).toBe(false);
   });
   it("repair heals 28, cannot repeat consecutively, and resets for each mission", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     b.player.hp = 30;
     b.repair();
     run(b, 1.7);
@@ -159,7 +159,7 @@ describe("survival and fortress mechanics", () => {
     expect(next.player.repairs).toBe(1);
   });
   it("modern air uses one shared budget, WWII permits its two different supports", () => {
-    const b = new Battle();
+    const b = new Battle("normal", 31, undefined, "left");
     expect(b.requestAir("helicopter", 1000)).toBe(true);
     b.pendingAir = null;
     b.phase = "aim";
