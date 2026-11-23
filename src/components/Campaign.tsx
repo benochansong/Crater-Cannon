@@ -1,3 +1,4 @@
+import { BreakthroughArt } from "./BreakthroughArt";
 import { missionSucceeded, REASON_TEXT } from "../game/objectives";
 import { useEffect, useState } from "react";
 import { MISSIONS, nextMission } from "../game/campaign";
@@ -16,7 +17,9 @@ export function CampaignArt({
   field: Field;
   completion?: boolean;
 }) {
-  const modern = ["frontier", "signal", "radar"].includes(field),
+  const modern = ["frontier", "signal", "radar", "convoy", "citadel"].includes(
+      field,
+    ),
     fortress = field === "fortress",
     france = field === "france";
   const sky = modern
@@ -136,6 +139,7 @@ export function CampaignArt({
           <path d="M-48-15H-27M27-15H48" stroke="#d2f1cf" strokeWidth="10" />
         </g>
       )}
+      <BreakthroughArt field={field} />
       <g transform="translate(115 235)" stroke="#172923" strokeWidth="4">
         <path d="M0 65L28 35H230L257 65L240 100H20Z" fill="#172c29" />
         {[35, 73, 111, 149, 187, 225].map((x) => (
@@ -408,11 +412,15 @@ export function MissionBriefing({
         </div>
         <p className="historical-note">
           차량·전투·대사는 창작입니다.{" "}
-          {m.config.objective
-            ? m.config.objective.type === "defend"
-              ? "시설과 차량 생존이 모두 필요합니다. 적을 먼저 격파하면 조기 성공합니다."
-              : "시설 파괴가 목표입니다. 플레이어 파괴 또는 제한 라운드 초과 시 실패합니다."
-            : "임무는 적 격파 시 성공하며, 40라운드 초과 시 실패합니다."}
+          {m.config.boss
+            ? "장갑 상태와 예고 공격을 확인하세요. 플레이어 파괴 또는 18라운드 초과 시 실패합니다."
+            : m.config.objective?.type === "escort"
+              ? "보급 차량과 플레이어 모두 생존해 목적지에 도착해야 합니다. 적 1대 격파만으로는 끝나지 않습니다."
+              : m.config.objective
+                ? m.config.objective.type === "defend"
+                  ? "시설과 차량 생존이 모두 필요합니다. 적을 먼저 격파하면 조기 성공합니다."
+                  : "시설 파괴가 목표입니다. 플레이어 파괴 또는 제한 라운드 초과 시 실패합니다."
+                : "임무는 적 격파 시 성공하며, 40라운드 초과 시 실패합니다."}
         </p>
         <div className="briefing-actions">
           <button onClick={onBack}>← 임무 선택</button>
@@ -493,7 +501,7 @@ export function MissionResult({
     <section className="mission-result">
       <CampaignArt field={m.config.field} completion={win} />
       <div>
-        {win && r.objective && (
+        {win && r.objective && !r.operation && (
           <div className="operation-cinematic" role="status">
             <span>
               {r.objective.type === "defend"
@@ -549,13 +557,33 @@ export function MissionResult({
         </div>
         {r.objective && (
           <p className="objective-result">
-            {r.objective.type === "defend"
-              ? "통신시설 잔여 HP " +
-                r.objective.hp +
-                " · 보강 회복 " +
-                r.objective.restored
-              : "레이더 잔여 HP " + r.objective.hp}{" "}
+            {r.objective.type === "escort"
+              ? "보급 차량 잔여 HP " + r.objective.hp
+              : r.objective.type === "defend"
+                ? "통신시설 잔여 HP " +
+                  r.objective.hp +
+                  " · 보강 회복 " +
+                  r.objective.restored
+                : "레이더 잔여 HP " + r.objective.hp}{" "}
             · 완료 라운드 {r.round} · {r.reason ? REASON_TEXT[r.reason] : ""}
+          </p>
+        )}
+        {r.operation && (
+          <p className="objective-result">
+            {r.operation.type === "escort"
+              ? "호송 " +
+                r.operation.checkpoint +
+                "/5 · 적 격파 " +
+                r.operation.kills +
+                "/3 · 차폐/보호 흡수 " +
+                r.operation.protectedDamage
+              : "보스 단계 " +
+                r.operation.phase +
+                "/3 · 약점 활용 " +
+                r.operation.weakness +
+                " · 방어 사용 " +
+                r.operation.defenses}{" "}
+            · 소요 {r.round}라운드
           </p>
         )}
         {win && (
@@ -576,8 +604,8 @@ export function MissionResult({
           )}
           {win && !next && (
             <strong>
-              FRONTLINE COMPLETE · {MISSIONS.length}/{MISSIONS.length} · 후속
-              작전 준비 중
+              NORTHERN FRONT COMPLETE · {MISSIONS.length}/{MISSIONS.length} ·
+              북부 작전 종료
             </strong>
           )}
         </div>

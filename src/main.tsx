@@ -1,3 +1,4 @@
+import { BreakthroughHUD } from "./components/BreakthroughHUD";
 import { OperationHUD } from "./components/OperationHUD";
 import { missionSucceeded } from "./game/objectives";
 import { Mobility } from "./components/Mobility";
@@ -485,7 +486,12 @@ function App() {
       battle.player.power,
     );
   }
-  const ready = screen === "battle" && battle.phase === "aim" && !paused;
+  const ready =
+    screen === "battle" &&
+    battle.phase === "aim" &&
+    !paused &&
+    !battle.scene &&
+    !battle.convoy?.moving;
   const status =
     battle.phase === "action"
       ? battle.action?.kind === "repair"
@@ -524,7 +530,7 @@ function App() {
           aria-label="크레이터 캐논 메인 메뉴"
         >
           <span className="brand-icon">✦</span> CRATER CANNON{" "}
-          <span className="edition">FRONTLINE OPERATIONS</span>
+          <span className="edition">OPERATION BREAKTHROUGH</span>
         </button>
         <div className="top-actions">
           <span className="local-badge">싱글 플레이 · 로컬 전투</span>
@@ -605,6 +611,27 @@ function App() {
             }}
             tabIndex={0}
           />
+          {screen === "battle" && battle.scene && (
+            <div
+              className={"operation-scene " + battle.scene.kind}
+              role="status"
+            >
+              <small>
+                {battle.scene.kind === "wave"
+                  ? "REINFORCEMENTS"
+                  : "NORTHERN FRONT / SPECIAL COMMAND"}
+              </small>
+              <strong>{battle.scene.title}</strong>
+              <button
+                onClick={() => {
+                  battle.skipScene();
+                  refresh((n) => n + 1);
+                }}
+              >
+                연출 건너뛰기
+              </button>
+            </div>
+          )}
           {screen === "battle" && battle.config.missionId && (
             <div className="mission-objective">
               <b>{selectedMission?.title}</b>
@@ -769,15 +796,22 @@ function App() {
                     <span className="pilot-avatar red">02</span>
                     <div>
                       <small>AI · {difficultyNames[battle.difficulty]}</small>
-                      <strong>{battle.config.enemyName}</strong>
+                      <strong>{battle.enemyName}</strong>
                     </div>
                     <b>
                       {battle.ai.hp}
-                      <em>/100</em>
+                      <em>
+                        /
+                        {battle.convoy ? [36, 46, 60][battle.convoy.wave] : 100}
+                      </em>
                     </b>
                   </div>
                   <div className="health-track">
-                    <i style={{ width: `${battle.ai.hp}%` }} />
+                    <i
+                      style={{
+                        width: `${(100 * battle.ai.hp) / (battle.convoy ? [36, 46, 60][battle.convoy.wave] : 100)}%`,
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -824,6 +858,11 @@ function App() {
           </div>
         ) : (
           <>
+            <BreakthroughHUD
+              battle={battle}
+              ready={ready}
+              onProtect={() => tactic(() => battle.protectConvoy())}
+            />
             <OperationHUD
               battle={battle}
               ready={ready}
@@ -878,7 +917,7 @@ function App() {
         <span>한 발의 포탄이 전장의 운명을 바꾼다.</span>
         <div>
           <button onClick={() => setOverlay("help")}>조작 안내</button>
-          <span>PHASE 7 / FRONTLINE OPERATIONS</span>
+          <span>PHASE 8 / OPERATION BREAKTHROUGH</span>
         </div>
       </footer>
       {screen === "result" && result && !selectedMission && (

@@ -2763,3 +2763,66 @@ h2 {
   flex-shrink: 0;
   white-space: nowrap;
 }
+.operation-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 7%;
+  color: #fff0c6;
+  text-align: center;
+  background: linear-gradient(0deg, #142c3bd9, transparent 70%);
+}
+.operation-scene small {
+  letter-spacing: 3px;
+  font-size: 11px;
+}
+.operation-scene strong {
+  font-size: clamp(18px, 2.8vw, 36px);
+  text-shadow: 0 3px #263834;
+}
+.operation-scene button {
+  padding: 9px 15px;
+  background: #e8e4bd;
+  color: #263e3d;
+  border-radius: 5px;
+}
+.operation-scene.boss-phase {
+  background: linear-gradient(0deg, #713e36d9, transparent);
+}
+.operation-scene.boss-end {
+  background: linear-gradient(0deg, #9a6a38e8, transparent);
+}
+.boss-panel {
+  background: #dfd9bf;
+  border-color: #ae9768;
+}
+.boss-panel.phase-3 {
+  background: #e5c9b3;
+}
+.boss-panel progress {
+  accent-color: #c4774c;
+}
+.convoy-panel {
+  background: #dce5cb;
+}
+.operation-actions > strong {
+  font-size: 13px;
+}
+@media (max-width: 740px) {
+  .operation-scene {
+    gap: 8px;
+  }
+  .operation-scene small {
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+  .operation-scene button {
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+}

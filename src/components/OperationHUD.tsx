@@ -12,7 +12,7 @@ export function OperationHUD({
 }) {
   const f = b.facility,
     o = b.config.objective;
-  if (!f || !o) return null;
+  if (!f || !o || b.convoy) return null;
   const defend = o.type === "defend",
     left = Math.max(0, o.rounds - b.completedRounds);
   const stage = defend

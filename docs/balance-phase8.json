@@ -1,0 +1,2355 @@
+{
+  "date": "2026-11-23",
+  "method": "90 real-engine games: two missions × three AI difficulties × (10 balanced + 5 attack-only) shared seeds 31–40. Common solver with angle ±2/power ±3 error. Balanced policy uses repairs, EMP, reactive shields, plus one convoy cover maneuver/protection. Attack-only never repairs or defends. No HP, position, damage or outcome injection. Engine time excludes human decision time; not a human difficulty rating.",
+  "results": [
+    {
+      "mission": "convoy-fire",
+      "difficulty": "easy",
+      "policy": "balanced",
+      "games": 10,
+      "wins": 10,
+      "timeouts": 0,
+      "meanSeconds": 164,
+      "meanHp": 70,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 162,
+          "round": 13,
+          "hp": 82,
+          "truckHp": 51,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 111,
+          "round": 10,
+          "hp": 76,
+          "truckHp": 75,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 166,
+          "round": 13,
+          "hp": 100,
+          "truckHp": 52,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 134,
+          "round": 11,
+          "hp": 93,
+          "truckHp": 56,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 192,
+          "round": 15,
+          "hp": 73,
+          "truckHp": 8,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 36,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 196,
+          "round": 15,
+          "hp": 75,
+          "truckHp": 32,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "aiBomberDamage": 0,
+          "moves": 3,
+          "scenes": 2
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 138,
+          "round": 12,
+          "hp": 52,
+          "truckHp": 56,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 205,
+          "round": 16,
+          "hp": 27,
+          "truckHp": 76,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 136,
+          "round": 11,
+          "hp": 62,
+          "truckHp": 80,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 40,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 196,
+          "round": 16,
+          "hp": 55,
+          "truckHp": 50,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        }
+      ]
+    },
+    {
+      "mission": "convoy-fire",
+      "difficulty": "easy",
+      "policy": "attack-only",
+      "games": 5,
+      "wins": 5,
+      "timeouts": 0,
+      "meanSeconds": 132,
+      "meanHp": 78,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 133,
+          "round": 11,
+          "hp": 76,
+          "truckHp": 80,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 104,
+          "round": 9,
+          "hp": 74,
+          "truckHp": 80,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 151,
+          "round": 12,
+          "hp": 92,
+          "truckHp": 17,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 120,
+          "round": 10,
+          "hp": 49,
+          "truckHp": 80,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 154,
+          "round": 12,
+          "hp": 100,
+          "truckHp": 49,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        }
+      ]
+    },
+    {
+      "mission": "convoy-fire",
+      "difficulty": "normal",
+      "policy": "balanced",
+      "games": 10,
+      "wins": 7,
+      "timeouts": 0,
+      "meanSeconds": 133,
+      "meanHp": 66,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "defeat",
+          "reason": "convoy-lost",
+          "seconds": 115,
+          "round": 9,
+          "hp": 58,
+          "truckHp": 0,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 4,
+            "kills": 2,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 6,
+            "defenses": 3
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 122,
+          "round": 11,
+          "hp": 67,
+          "truckHp": 32,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 152,
+          "round": 12,
+          "hp": 90,
+          "truckHp": 75,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 1,
+            "defenses": 3
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 124,
+          "round": 11,
+          "hp": 51,
+          "truckHp": 70,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 3
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 154,
+          "round": 13,
+          "hp": 64,
+          "truckHp": 18,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 36,
+          "outcome": "defeat",
+          "reason": "convoy-lost",
+          "seconds": 130,
+          "round": 10,
+          "hp": 48,
+          "truckHp": 0,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 3,
+            "kills": 1,
+            "wave": 2,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 1
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 144,
+          "round": 12,
+          "hp": 46,
+          "truckHp": 8,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 3
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 136,
+          "round": 11,
+          "hp": 69,
+          "truckHp": 56,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 131,
+          "round": 11,
+          "hp": 66,
+          "truckHp": 32,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 40,
+          "outcome": "defeat",
+          "reason": "convoy-lost",
+          "seconds": 125,
+          "round": 10,
+          "hp": 99,
+          "truckHp": 0,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 4,
+            "kills": 2,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        }
+      ]
+    },
+    {
+      "mission": "convoy-fire",
+      "difficulty": "normal",
+      "policy": "attack-only",
+      "games": 5,
+      "wins": 5,
+      "timeouts": 0,
+      "meanSeconds": 138,
+      "meanHp": 66,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 151,
+          "round": 12,
+          "hp": 45,
+          "truckHp": 14,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 6,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 106,
+          "round": 9,
+          "hp": 94,
+          "truckHp": 62,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 161,
+          "round": 12,
+          "hp": 28,
+          "truckHp": 75,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 1,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 120,
+          "round": 10,
+          "hp": 72,
+          "truckHp": 50,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 151,
+          "round": 12,
+          "hp": 92,
+          "truckHp": 21,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        }
+      ]
+    },
+    {
+      "mission": "convoy-fire",
+      "difficulty": "hard",
+      "policy": "balanced",
+      "games": 10,
+      "wins": 6,
+      "timeouts": 0,
+      "meanSeconds": 144,
+      "meanHp": 73,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "defeat",
+          "reason": "convoy-lost",
+          "seconds": 148,
+          "round": 12,
+          "hp": 70,
+          "truckHp": 0,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 4,
+            "kills": 2,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 3
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 126,
+          "round": 11,
+          "hp": 94,
+          "truckHp": 8,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 158,
+          "round": 13,
+          "hp": 72,
+          "truckHp": 14,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 6,
+            "defenses": 4
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 120,
+          "round": 10,
+          "hp": 100,
+          "truckHp": 56,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 35,
+          "outcome": "defeat",
+          "reason": "convoy-lost",
+          "seconds": 137,
+          "round": 11,
+          "hp": 72,
+          "truckHp": 0,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 4,
+            "kills": 2,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 36,
+          "outcome": "defeat",
+          "reason": "convoy-lost",
+          "seconds": 181,
+          "round": 14,
+          "hp": 57,
+          "truckHp": 0,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 4,
+            "kills": 2,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 3
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 139,
+          "round": 12,
+          "hp": 69,
+          "truckHp": 27,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 126,
+          "round": 11,
+          "hp": 86,
+          "truckHp": 40,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 3
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 147,
+          "round": 12,
+          "hp": 59,
+          "truckHp": 47,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        },
+        {
+          "seed": 40,
+          "outcome": "defeat",
+          "reason": "convoy-lost",
+          "seconds": 161,
+          "round": 13,
+          "hp": 50,
+          "truckHp": 0,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 4,
+            "kills": 2,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 15,
+            "defenses": 4
+          },
+          "aiBomberDamage": 0,
+          "moves": 1,
+          "scenes": 2
+        }
+      ]
+    },
+    {
+      "mission": "convoy-fire",
+      "difficulty": "hard",
+      "policy": "attack-only",
+      "games": 5,
+      "wins": 4,
+      "timeouts": 0,
+      "meanSeconds": 133,
+      "meanHp": 63,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 138,
+          "round": 11,
+          "hp": 26,
+          "truckHp": 44,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 108,
+          "round": 9,
+          "hp": 76,
+          "truckHp": 38,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 153,
+          "round": 12,
+          "hp": 33,
+          "truckHp": 37,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 6,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "reason": "escorted",
+          "seconds": 122,
+          "round": 10,
+          "hp": 82,
+          "truckHp": 38,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 5,
+            "kills": 3,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        },
+        {
+          "seed": 35,
+          "outcome": "defeat",
+          "reason": "convoy-lost",
+          "seconds": 146,
+          "round": 11,
+          "hp": 100,
+          "truckHp": 0,
+          "operation": {
+            "type": "escort",
+            "checkpoint": 4,
+            "kills": 2,
+            "wave": 3,
+            "phase": 0,
+            "weakness": 0,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 2
+        }
+      ]
+    },
+    {
+      "mission": "iron-citadel",
+      "difficulty": "easy",
+      "policy": "balanced",
+      "games": 10,
+      "wins": 10,
+      "timeouts": 0,
+      "meanSeconds": 117,
+      "meanHp": 71,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 116,
+          "round": 9,
+          "hp": 71,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 107,
+          "round": 8,
+          "hp": 85,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 126,
+          "round": 9,
+          "hp": 77,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 120,
+          "round": 9,
+          "hp": 53,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 117,
+          "round": 9,
+          "hp": 71,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 36,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 143,
+          "round": 11,
+          "hp": 61,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 133,
+          "round": 10,
+          "hp": 71,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 127,
+          "round": 9,
+          "hp": 76,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 92,
+          "round": 7,
+          "hp": 64,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 40,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 92,
+          "round": 7,
+          "hp": 77,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        }
+      ]
+    },
+    {
+      "mission": "iron-citadel",
+      "difficulty": "easy",
+      "policy": "attack-only",
+      "games": 5,
+      "wins": 5,
+      "timeouts": 0,
+      "meanSeconds": 123,
+      "meanHp": 29,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 123,
+          "round": 9,
+          "hp": 44,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 115,
+          "round": 8,
+          "hp": 34,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 30,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 133,
+          "round": 9,
+          "hp": 25,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 30,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 129,
+          "round": 9,
+          "hp": 1,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 30,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 117,
+          "round": 8,
+          "hp": 41,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 30,
+          "moves": 0,
+          "scenes": 4
+        }
+      ]
+    },
+    {
+      "mission": "iron-citadel",
+      "difficulty": "normal",
+      "policy": "balanced",
+      "games": 10,
+      "wins": 10,
+      "timeouts": 0,
+      "meanSeconds": 104,
+      "meanHp": 61,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 96,
+          "round": 8,
+          "hp": 52,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 100,
+          "round": 8,
+          "hp": 58,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 108,
+          "round": 8,
+          "hp": 69,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 112,
+          "round": 8,
+          "hp": 50,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 96,
+          "round": 7,
+          "hp": 67,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 36,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 132,
+          "round": 10,
+          "hp": 48,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 94,
+          "round": 7,
+          "hp": 53,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 96,
+          "round": 7,
+          "hp": 81,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 98,
+          "round": 8,
+          "hp": 52,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 40,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 105,
+          "round": 7,
+          "hp": 80,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        }
+      ]
+    },
+    {
+      "mission": "iron-citadel",
+      "difficulty": "normal",
+      "policy": "attack-only",
+      "games": 5,
+      "wins": 4,
+      "timeouts": 0,
+      "meanSeconds": 109,
+      "meanHp": 25,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 103,
+          "round": 8,
+          "hp": 24,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 108,
+          "round": 8,
+          "hp": 40,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 118,
+          "round": 8,
+          "hp": 20,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 30,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 34,
+          "outcome": "defeat",
+          "reason": "player-lost",
+          "seconds": 111,
+          "round": 7,
+          "hp": 0,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 0,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 30,
+          "moves": 0,
+          "scenes": 3
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 106,
+          "round": 7,
+          "hp": 42,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 30,
+          "moves": 0,
+          "scenes": 4
+        }
+      ]
+    },
+    {
+      "mission": "iron-citadel",
+      "difficulty": "hard",
+      "policy": "balanced",
+      "games": 10,
+      "wins": 10,
+      "timeouts": 0,
+      "meanSeconds": 126,
+      "meanHp": 55,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 110,
+          "round": 9,
+          "hp": 56,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 32,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 147,
+          "round": 11,
+          "hp": 60,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 33,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 134,
+          "round": 10,
+          "hp": 49,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 34,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 143,
+          "round": 11,
+          "hp": 56,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 111,
+          "round": 8,
+          "hp": 70,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 36,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 162,
+          "round": 13,
+          "hp": 49,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 2
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 37,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 126,
+          "round": 10,
+          "hp": 35,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 38,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 96,
+          "round": 7,
+          "hp": 69,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 39,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 129,
+          "round": 10,
+          "hp": 48,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 40,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 99,
+          "round": 7,
+          "hp": 61,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 4
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 15,
+          "moves": 0,
+          "scenes": 4
+        }
+      ]
+    },
+    {
+      "mission": "iron-citadel",
+      "difficulty": "hard",
+      "policy": "attack-only",
+      "games": 5,
+      "wins": 2,
+      "timeouts": 0,
+      "meanSeconds": 111,
+      "meanHp": 4,
+      "runs": [
+        {
+          "seed": 31,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 104,
+          "round": 8,
+          "hp": 10,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 0,
+          "moves": 0,
+          "scenes": 4
+        },
+        {
+          "seed": 32,
+          "outcome": "defeat",
+          "reason": "player-lost",
+          "seconds": 115,
+          "round": 8,
+          "hp": 0,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 0,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 17,
+          "moves": 0,
+          "scenes": 3
+        },
+        {
+          "seed": 33,
+          "outcome": "defeat",
+          "reason": "player-lost",
+          "seconds": 109,
+          "round": 7,
+          "hp": 0,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 0,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 30,
+          "moves": 0,
+          "scenes": 3
+        },
+        {
+          "seed": 34,
+          "outcome": "defeat",
+          "reason": "player-lost",
+          "seconds": 118,
+          "round": 8,
+          "hp": 0,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 0,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 12,
+          "moves": 0,
+          "scenes": 3
+        },
+        {
+          "seed": 35,
+          "outcome": "victory",
+          "reason": "boss-destroyed",
+          "seconds": 108,
+          "round": 7,
+          "hp": 8,
+          "operation": {
+            "type": "boss",
+            "checkpoint": 0,
+            "kills": 1,
+            "wave": 0,
+            "phase": 3,
+            "weakness": 1,
+            "protectedDamage": 0,
+            "defenses": 0
+          },
+          "bossTransitions": [
+            1,
+            2,
+            3
+          ],
+          "finalAttackUsed": true,
+          "aiBomberDamage": 30,
+          "moves": 0,
+          "scenes": 4
+        }
+      ]
+    }
+  ]
+}

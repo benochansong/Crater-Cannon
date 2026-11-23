@@ -1,3 +1,18 @@
+import {
+  CONVOY_ROUTE,
+  CONVOY_GATES,
+  WAVES,
+  createConvoy,
+  createBoss,
+  escortVerdict,
+  nextBossPhase,
+} from "./operations";
+import type {
+  ConvoyState,
+  BossState,
+  OperationScene,
+  OperationRecord,
+} from "./operations";
 import { createFacility, facilityY, objectiveVerdict } from "./objectives";
 import type {
   CollisionTarget,
@@ -175,6 +190,8 @@ export function weaponInfo(id: WeaponId, era: Era): Weapon {
   return w;
 }
 export interface Tank extends Vec {
+  width?: number;
+  height?: number;
   side: Side;
   hp: number;
   angle: number;
@@ -247,6 +264,7 @@ export interface Stats {
   damage: number;
 }
 export interface BattleResult extends Stats {
+  operation?: OperationRecord;
   objective?: ObjectiveRecord;
   reason?: MissionReason;
   round?: number;
@@ -276,7 +294,9 @@ export interface GameEvent extends Vec {
     | "shield-end"
     | "move"
     | "air-call"
-    | "air-enter";
+    | "air-enter"
+    | "operation";
+  text?: string;
   angle?: number;
   weapon?: WeaponId;
   side?: Side;
@@ -587,6 +607,10 @@ const weaponStats = () =>
     Stats
   >;
 export class Battle {
+  convoy: ConvoyState | null = null;
+  boss: BossState | null = null;
+  scene: OperationScene | null = null;
+  private resumeOperationTurn = false;
   facility: Facility | null = null;
   completedRounds = 0;
   reinforcement = 1;
@@ -672,10 +696,25 @@ export class Battle {
   private damageFacility(raw: number, owner: Side, weapon?: WeaponId) {
     const f = this.facility;
     if (!f || f.hp <= 0) return 0;
+    if (this.convoy && owner === "ai") {
+      const before = raw;
+      if (this.convoyCovered) raw = Math.round(raw * 0.75);
+      const shielded = shieldDamage(
+        raw,
+        this.convoy.shieldRaw,
+        this.convoy.shield,
+      );
+      if (this.convoy.shield) this.convoy.shieldRaw = shielded.total;
+      raw = shielded.amount;
+      this.convoy.protectedDamage += before - raw;
+    }
     const amount = Math.min(f.hp, Math.max(0, Math.round(raw)));
     if (!amount) return 0;
     f.hp -= amount;
     f.hurt = 1;
+    if (this.convoy)
+      this.convoy.warning =
+        "⚠ 보급 차량 피격 −" + amount + " · 호송 보호 또는 EMP로 대응하세요";
     this.events.push({
       type: "damage",
       x: f.x,
@@ -819,9 +858,17 @@ export class Battle {
         frontier: 3,
         signal: 4,
         radar: 5,
+        convoy: 6,
+        citadel: 7,
       }[config.field];
       this.terrain = Float64Array.from(this.terrain, (y, x) =>
         clamp(y + (offset + 1) * 8 * Math.sin(x / 140 + offset), 350, 570),
+      );
+    }
+    if (config.field === "convoy" || config.field === "citadel") {
+      this.terrain = Float64Array.from(
+        this.terrain,
+        (_, x) => 450 + 22 * Math.sin(x / 230) + 8 * Math.sin(x / 95),
       );
     }
     this.originalTerrain = this.terrain.slice();
@@ -841,7 +888,233 @@ export class Battle {
       lastMiss: null,
     };
     this.facilityAimMemory = { ...this.aiMemory };
+    if (config.objective?.type === "escort") {
+      this.convoy = createConvoy();
+      this.configureWave();
+    }
+    if (config.boss) {
+      this.boss = createBoss();
+      this.ai.width = 108;
+      this.ai.height = 58;
+      this.ai.repairs = 0;
+      this.ai.shields = 1;
+      this.ai.emp = 1;
+      this.ai.ammo.drone = 1;
+      this.ai.ammo.missile = 1;
+      this.startScene("boss-intro", "IRON CITADEL — ARMORED COMMANDER", 2.5);
+    }
   }
+
+  get enemyName() {
+    return this.convoy ? WAVES[this.convoy.wave].name : this.config.enemyName;
+  }
+  get convoyCovered() {
+    return (
+      !!this.convoy &&
+      !!this.facility &&
+      this.player.x > this.facility.x &&
+      this.player.x - this.facility.x <= 180
+    );
+  }
+  get operationRecord(): OperationRecord | undefined {
+    if (!this.convoy && !this.boss) return undefined;
+    return {
+      type: this.convoy ? "escort" : "boss",
+      checkpoint: this.convoy?.checkpoint ?? 0,
+      kills: this.convoy?.kills ?? Number(this.ai.hp <= 0),
+      wave: this.convoy ? this.convoy.wave + 1 : 0,
+      phase: this.boss?.phase ?? 0,
+      weakness: this.boss?.weakness ?? 0,
+      protectedDamage: this.convoy?.protectedDamage ?? 0,
+      defenses: this.defenses.player + this.actionCounts.player.shield,
+    };
+  }
+  canProtectConvoy() {
+    return (
+      !!this.convoy &&
+      this.facility!.hp > 0 &&
+      this.canAct("player") &&
+      this.convoyCovered &&
+      !this.convoy.shield &&
+      this.player.shields > 0 &&
+      !this.player.mobility.input
+    );
+  }
+  protectConvoy() {
+    if (!this.canProtectConvoy()) return false;
+    this.player.shields--;
+    this.convoy!.shield = true;
+    this.convoy!.shieldRaw = 0;
+    this.actionCounts.player.shield++;
+    this.lastAction.player = "convoy-shield";
+    this.events.push({
+      type: "shield",
+      x: this.facility!.x,
+      y: this.facility!.y,
+      side: "player",
+    });
+    this.phase = "resolve";
+    this.timer = 0.7;
+    return true;
+  }
+  skipScene() {
+    this.scene = null;
+    if (this.resumeOperationTurn) {
+      this.resumeOperationTurn = false;
+      this.nextTurn(true);
+    }
+  }
+  private startScene(
+    kind: OperationScene["kind"],
+    title: string,
+    duration = 1.6,
+  ) {
+    this.adjust(0, "player");
+    this.adjust(0, "ai");
+    this.scene = { kind, title, remaining: duration, duration };
+    this.events.push({
+      type: "operation",
+      x: this.ai.x,
+      y: this.ai.y - 65,
+      text: title,
+    });
+  }
+  private configureWave() {
+    const c = this.convoy!,
+      w = WAVES[c.wave];
+    this.ai.hp = w.hp;
+    this.ai.ammo.drone = w.drone;
+    this.ai.ammo.missile = w.missile;
+    this.ai.repairs = 0;
+    this.ai.shields = c.wave === 2 ? 1 : 0;
+    this.ai.emp = c.wave === 2 ? 1 : 0;
+    this.ai.airRemaining = 0;
+    this.ai.ammo.crater = c.wave === 2 ? 1 : 0;
+  }
+  private tickOperation() {
+    if (this.scene) {
+      this.scene.remaining -= STEP;
+      if (this.scene.remaining <= 0) this.skipScene();
+      return true;
+    }
+    const c = this.convoy,
+      f = this.facility;
+    if (c?.moving && f) {
+      c.driveTime += STEP;
+      const q = Math.min(1, c.driveTime / 1.6),
+        old = f.x;
+      f.x = c.fromX + (c.targetX - c.fromX) * (q * q * (3 - 2 * q));
+      c.travel += f.x - old;
+      f.y = facilityY(this.originalTerrain, f.x, f.width, f.height);
+      if (q >= 1) {
+        c.moving = false;
+        c.checkpoint++;
+        c.warning =
+          c.checkpoint === 5
+            ? "보급 차량 도착"
+            : "체크포인트 " + c.checkpoint + "/5 확보";
+        this.nextTurn(true);
+      }
+      return true;
+    }
+    return false;
+  }
+  private advanceOperation(cycleEnded: boolean, skipCycle: boolean) {
+    const c = this.convoy,
+      b = this.boss,
+      f = this.facility;
+    if (
+      c &&
+      f &&
+      this.player.hp > 0 &&
+      f.hp > 0 &&
+      !skipCycle &&
+      !this.pendingAir
+    ) {
+      if (this.ai.hp <= 0 && !c.cleared) {
+        c.kills++;
+        c.cleared = true;
+        if (c.wave < WAVES.length - 1) {
+          c.wave++;
+          c.cleared = false;
+          c.newWave = true;
+          this.tanks[1] = this.makeTank("ai", WAVES[c.wave].x);
+          this.configureWave();
+          this.aiMemory = {
+            bias: AI_PROFILE[this.difficulty].initialBias,
+            shots: 0,
+            lastMiss: null,
+          };
+          this.facilityAimMemory = { ...this.aiMemory };
+          this.aiPlan = null;
+          this.aiAction = null;
+          this.aiAdjustment = 0;
+          this.lastAction.ai = "";
+          this.lastImpact.ai = null;
+          this.target = null;
+          this.selectedTarget = "ai";
+          this.startScene(
+            "wave",
+            "WAVE " + (c.wave + 1) + " · " + WAVES[c.wave].name,
+            1.5,
+          );
+        }
+      }
+      if (
+        cycleEnded &&
+        c.checkpoint < 5 &&
+        c.kills >= CONVOY_GATES[c.checkpoint]
+      ) {
+        c.fromX = f.x;
+        c.targetX = CONVOY_ROUTE[c.checkpoint + 1];
+        c.driveTime = 0;
+        c.moving = true;
+        c.warning = "호송 전용 차선 주행 · " + (c.checkpoint + 1) + "/5";
+        this.phase = "resolve";
+        return true;
+      }
+      if (cycleEnded && c.checkpoint < 5)
+        c.warning = "통로 차단 · 현재 적 전차를 격파하세요";
+    }
+    if (b && this.player.hp > 0) {
+      const drop =
+        this.originalTerrain[Math.round(this.ai.x)] !== undefined
+          ? this.terrain[Math.round(this.ai.x)] -
+            this.originalTerrain[Math.round(this.ai.x)]
+          : 0;
+      const next = nextBossPhase(b, this.ai.hp, drop, this.player.x);
+      if (next > b.phase) {
+        if (b.phase === 1) {
+          b.weakness++;
+          b.plates = 0;
+          if (!b.transitions.includes(2)) b.transitions.push(2);
+        }
+        b.phase = next;
+        if (!b.transitions.includes(next)) b.transitions.push(next);
+        this.startScene(
+          "boss-phase",
+          next === 2 ? "PHASE 2 · 방어선 붕괴" : "PHASE 3 · 최후의 반격",
+        );
+      }
+      if (this.ai.hp <= 0 && !b.deathShown) {
+        b.deathShown = true;
+        carve(this.terrain, this.ai.x, this.ai.y, "crater");
+        this.terrainRevision++;
+        this.events.push({
+          type: "explosion",
+          x: this.ai.x,
+          y: this.ai.y,
+          weapon: "crater",
+          direct: true,
+        });
+        this.startScene("boss-end", "지휘전차 격파 · 북부 방어선 돌파", 2);
+        this.resumeOperationTurn = true;
+        return true;
+      }
+    }
+    return false;
+  }
+
   private makeTank(side: Side, x: number): Tank {
     return {
       side,
@@ -910,6 +1183,8 @@ export class Battle {
   private canAct(side: Side) {
     return (
       !this.result &&
+      !this.scene &&
+      !this.convoy?.moving &&
       this.tankFor(side).hp > 0 &&
       this.turn === side &&
       this.phase === (side === "player" ? "aim" : "ai-aim")
@@ -1037,7 +1312,7 @@ export class Battle {
       other.x,
     );
     const f = this.facility;
-    if (f && f.hp > 0) {
+    if (f && f.hp > 0 && !this.convoy) {
       const gap = f.width / 2 + 34;
       if (f.x < t.x) range.left = Math.max(range.left, f.x + gap);
       else range.right = Math.min(range.right, f.x - gap);
@@ -1048,6 +1323,7 @@ export class Battle {
     const f = this.facility;
     if (
       f &&
+      !this.convoy &&
       f.hp > 0 &&
       Math.min(from, to) < f.x + f.width / 2 + 34 &&
       Math.max(from, to) > f.x - f.width / 2 - 34
@@ -1336,7 +1612,12 @@ export class Battle {
     }
     carve(this.terrain, point.x, y, weapon);
     if (this.facility)
-      this.facility.y = facilityY(this.terrain, this.facility.x);
+      this.facility.y = facilityY(
+        this.convoy ? this.originalTerrain : this.terrain,
+        this.facility.x,
+        this.facility.width,
+        this.facility.height,
+      );
     this.terrainRevision++;
     this.events.push({
       type: "explosion",
@@ -1347,6 +1628,10 @@ export class Battle {
     });
   }
   private expireShield(owner: Side) {
+    if (owner === "ai" && this.convoy) {
+      this.convoy.shield = false;
+      this.convoy.shieldRaw = 0;
+    }
     const t = owner === "player" ? this.ai : this.player;
     t.smoke = false;
     t.cover = false;
@@ -1370,7 +1655,17 @@ export class Battle {
     if (t.hp <= 0) return 0;
     if (t.side !== owner) {
       const armor =
-        t.side === "ai" ? (this.fortified ? 0.55 : this.config.armor) : 0;
+        t.side === "ai"
+          ? this.boss
+            ? this.boss.phase === 1
+              ? 0.45
+              : 0
+            : this.convoy
+              ? WAVES[this.convoy.wave].armor
+              : this.fortified
+                ? 0.55
+                : this.config.armor
+          : 0;
       raw = Math.round(
         raw *
           (weapon === "ap" ? 1 : 1 - armor) *
@@ -1489,13 +1784,15 @@ export class Battle {
   }
   fire(): boolean {
     return (
-      this.phase === "aim" &&
+      this.canAct("player") &&
       (this.weapon !== "missile" || this.target !== null) &&
       this.shoot(this.player, this.weapon)
     );
   }
   private shoot(tank: Tank, weapon: WeaponId): boolean {
     if (
+      !!this.scene ||
+      !!this.convoy?.moving ||
       tank.mobility.input !== 0 ||
       tank.mobility.speed > 0 ||
       !this.allowedWeapons.includes(weapon) ||
@@ -1590,7 +1887,17 @@ export class Battle {
     this.drone = null;
     this.defense = null;
     this.droneInput = { x: 0, y: 0 };
+    const bossHp = this.ai.hp;
     if (hit && !hit.escaped) this.explode(hit, weapon, owner);
+    if (
+      this.boss &&
+      owner === "player" &&
+      this.ai.hp < bossHp &&
+      this.boss.phase === 1
+    ) {
+      this.boss.hits++;
+      this.boss.plates = Math.max(0, 3 - this.boss.hits);
+    }
     this.expireShield(owner);
     this.phase = "resolve";
     this.timer = hit && !hit.escaped ? 0.85 : 0.4;
@@ -1606,8 +1913,14 @@ export class Battle {
   private tick() {
     if (this.phase === "over") return;
     this.elapsed += STEP;
+    if (this.tickOperation()) return;
     if (this.facility) {
-      this.facility.y = facilityY(this.terrain, this.facility.x);
+      this.facility.y = facilityY(
+        this.convoy ? this.originalTerrain : this.terrain,
+        this.facility.x,
+        this.facility.width,
+        this.facility.height,
+      );
       this.facility.hurt = Math.max(0, this.facility.hurt - STEP * 2);
       if (this.facility.hp <= 0) this.facility.destroyedAge += STEP;
     }
@@ -1687,6 +2000,10 @@ export class Battle {
         if (!p.done && a.age >= p.time) this.airImpact(i);
       });
       if (a.age >= AIR[a.kind].duration) {
+        if (this.boss?.phase === 1 && a.owner === "player" && a.enemyHit) {
+          this.boss.hits++;
+          this.boss.plates = Math.max(0, 3 - this.boss.hits);
+        }
         this.expireShield(a.owner);
         this.air = null;
         this.resumeAfterAir = a.owner;
@@ -1902,7 +2219,12 @@ export class Battle {
     carve(this.terrain, hit.x, hit.y, weapon);
     this.terrainRevision++;
     if (this.facility)
-      this.facility.y = facilityY(this.terrain, this.facility.x);
+      this.facility.y = facilityY(
+        this.convoy ? this.originalTerrain : this.terrain,
+        this.facility.x,
+        this.facility.width,
+        this.facility.height,
+      );
     this.events.push({
       type: "explosion",
       x: hit.x,
@@ -1911,40 +2233,69 @@ export class Battle {
       direct: hit.direct !== null,
     });
   }
-  private nextTurn() {
+  private nextTurn(skipCycle = false) {
     if (this.ai.hp <= 0 && this.pendingAir?.owner === "ai")
       this.pendingAir = null;
     const cycleEnded =
-      !this.pendingAir &&
-      ((this.turn === "ai" && this.resumeAfterAir !== "ai") ||
-        this.resumeAfterAir === "player" ||
-        (this.ai.hp <= 0 && this.turn === "player"));
-    if (this.config.objective && cycleEnded) this.completedRounds++;
-    const missionVerdict = this.config.objective
-      ? objectiveVerdict(
-          this.config.objective,
+      (skipCycle && !!this.convoy) ||
+      (!this.pendingAir &&
+        ((this.turn === "ai" && this.resumeAfterAir !== "ai") ||
+          this.resumeAfterAir === "player" ||
+          (this.ai.hp <= 0 && this.turn === "player")));
+    if (this.config.objective && cycleEnded && !skipCycle)
+      this.completedRounds++;
+    if (this.advanceOperation(cycleEnded, skipCycle)) return;
+    const missionVerdict = this.convoy
+      ? escortVerdict(
           this.player.hp,
-          this.ai.hp,
-          this.facility,
+          this.facility!.hp,
+          this.convoy.checkpoint,
           this.completedRounds,
-          this.allowedWeapons.some((w) => this.player.ammo[w] > 0) ||
-            this.pendingAir?.owner === "player",
+          this.config.objective!.rounds,
         )
-      : null;
-    const outcome = this.config.objective
-      ? (missionVerdict?.outcome ?? null)
-      : (judge(this.player.hp, this.ai.hp) ??
-        (this.round >= 40 &&
-        (this.turn === "ai" || this.resumeAfterAir !== null) &&
-        !this.pendingAir
-          ? this.config.winCondition === "destroy"
-            ? "defeat"
-            : this.player.hp === this.ai.hp
-              ? "draw"
-              : this.player.hp > this.ai.hp
-                ? "victory"
-                : "defeat"
-          : null));
+      : this.boss
+        ? this.player.hp <= 0
+          ? {
+              outcome: "defeat" as Outcome,
+              reason: "player-lost" as MissionReason,
+            }
+          : this.ai.hp <= 0
+            ? {
+                outcome: "victory" as Outcome,
+                reason: "boss-destroyed" as MissionReason,
+              }
+            : this.round >= this.config.boss!.rounds && cycleEnded
+              ? {
+                  outcome: "defeat" as Outcome,
+                  reason: "time-limit" as MissionReason,
+                }
+              : null
+        : this.config.objective
+          ? objectiveVerdict(
+              this.config.objective,
+              this.player.hp,
+              this.ai.hp,
+              this.facility,
+              this.completedRounds,
+              this.allowedWeapons.some((w) => this.player.ammo[w] > 0) ||
+                this.pendingAir?.owner === "player",
+            )
+          : null;
+    const outcome =
+      this.config.objective || this.boss
+        ? (missionVerdict?.outcome ?? null)
+        : (judge(this.player.hp, this.ai.hp) ??
+          (this.round >= 40 &&
+          (this.turn === "ai" || this.resumeAfterAir !== null) &&
+          !this.pendingAir
+            ? this.config.winCondition === "destroy"
+              ? "defeat"
+              : this.player.hp === this.ai.hp
+                ? "draw"
+                : this.player.hp > this.ai.hp
+                  ? "victory"
+                  : "defeat"
+            : null));
     if (outcome) {
       this.phase = "over";
       this.pendingAir = null;
@@ -1961,6 +2312,7 @@ export class Battle {
         ...this.stats,
         missionId: this.config.missionId,
         objective: this.objectiveRecord,
+        operation: this.operationRecord,
         reason: missionVerdict?.reason,
         round: this.config.objective
           ? Math.min(
@@ -1992,10 +2344,11 @@ export class Battle {
     }
     if (this.pendingAir) this.pendingAir.responseStarted = true;
     const next =
-      this.ai.hp <= 0
+      this.ai.hp <= 0 || this.convoy?.newWave
         ? "player"
         : (this.resumeAfterAir ?? (this.turn === "player" ? "ai" : "player"));
     this.resumeAfterAir = null;
+    if (this.convoy) this.convoy.newWave = false;
     for (const t of this.tanks) this.adjust(0, t.side);
     this.aiAdjustment = 0;
     if (!(this.pendingAir?.responseStarted && this.pendingAir.owner !== next)) {
@@ -2027,8 +2380,36 @@ export class Battle {
                     (this.player.hp < 30 ? 0.15 : 0)
                 ? "objective"
                 : "player";
+      } else if (this.convoy && this.facility!.hp > 0) {
+        this.aiAttackTarget =
+          this.convoy.wave === 0
+            ? "player"
+            : this.convoy.wave === 1
+              ? "objective"
+              : this.mobilityRandom() <
+                  (this.difficulty === "easy"
+                    ? 0.35
+                    : this.difficulty === "hard"
+                      ? 0.65
+                      : 0.5)
+                ? "objective"
+                : "player";
       } else this.aiAttackTarget = "player";
-      this.aiAction = chooseTactic(this);
+      this.aiAction = this.boss ? null : chooseTactic(this);
+      if (
+        this.boss?.phase === 3 &&
+        !this.boss.finalAttackUsed &&
+        !this.pendingAir &&
+        this.ai.support.bomber > 0 &&
+        this.ai.airRemaining > 0
+      ) {
+        this.boss.finalAttackUsed = true;
+        this.boss.announced = "폭격 지원";
+        this.boss.warning =
+          "⚠ 폭격 1회 요청 · 표시된 구역에서 이동하거나 방어막으로 대응";
+        this.aiAction = { kind: "bomber", targetX: this.player.x };
+        this.timer = 1.8;
+      }
       if (this.aiAction) return;
       let tacticalWeapon = chooseArsenal(
         this.ai,
@@ -2048,6 +2429,25 @@ export class Battle {
         tacticalWeapon = "drone";
       if (!this.allowedWeapons.includes(tacticalWeapon))
         tacticalWeapon = this.allowedWeapons[0];
+      if (this.boss) {
+        tacticalWeapon =
+          this.boss.phase === 1
+            ? "shell"
+            : this.ai.ammo.missile > 0
+              ? "missile"
+              : this.ai.ammo.drone > 0
+                ? "drone"
+                : this.boss.phase === 3 && this.ai.ammo.crater > 0
+                  ? "crater"
+                  : "shell";
+        this.boss.announced = WEAPONS[tacticalWeapon].name;
+        this.boss.warning =
+          "다음 공격: " +
+          this.boss.announced +
+          (tacticalWeapon === "missile" || tacticalWeapon === "drone"
+            ? " · 출격 중 EMP 대응"
+            : " · 이동 또는 반응 방어막");
+      }
       this.aiWeapon = tacticalWeapon;
       if (!this.planAdjustment()) this.aimAI();
     } else {

@@ -1,3 +1,4 @@
+import { drawOperationField } from "./operationRenderer";
 import { drawFacility } from "./facilityRenderer";
 import { drawTracks, drawMobility } from "./mobilityRenderer";
 import { drawCampaignBackground, drawEraTank } from "./campaignRenderer";
@@ -278,9 +279,19 @@ export class Renderer {
         Math.cos(this.time * 93) * this.shake * 0.6,
       );
     this.camera.update(game.projectile ?? game.drone, dt, options.menu);
+    if (game.scene && game.boss) {
+      const focus = Math.sin(
+        Math.PI * (1 - game.scene.remaining / game.scene.duration),
+      );
+      this.camera.scale = 1 + 0.25 * focus;
+      this.camera.x = (WIDTH * 0.63 - game.ai.x * 1.25) * focus;
+      this.camera.y = (HEIGHT * 0.57 - game.ai.y * 1.25) * focus;
+    }
     ctx.translate(this.camera.x, this.camera.y);
     ctx.scale(this.camera.scale, this.camera.scale);
+    if (game.boss) drawOperationField(ctx, game, this.time);
     this.terrain(ctx, game);
+    if (game.convoy) drawOperationField(ctx, game, this.time);
     if (!options.menu) {
       drawMobility(ctx, game);
       drawFacility(ctx, game, this.time);

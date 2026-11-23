@@ -99,6 +99,11 @@ export class Sound {
   }
   event(e: GameEvent) {
     try {
+      if (e.type === "operation") {
+        this.tone(110, 55, 0.5, "sawtooth", 0, 0.18);
+        this.tone(440, 660, 0.2, "triangle", 0.2, 0.18);
+        this.noise(0.25, 800, 0.12);
+      }
       if (e.type === "repair") {
         this.tone(440, 880, 0.3, "sine", 0, 0.15);
         this.tone(660, 990, 0.3, "sine", 0.5, 0.15);

@@ -1,4 +1,5 @@
 import { drawTracks } from "./mobilityRenderer";
+import { drawBoss } from "./operationRenderer";
 import type { Battle, Tank } from "./engine";
 export function drawCampaignBackground(c: CanvasRenderingContext2D, b: Battle) {
   if (b.config.field === "valley") return;
@@ -14,6 +15,49 @@ export function drawCampaignBackground(c: CanvasRenderingContext2D, b: Battle) {
   c.beginPath();
   c.arc(990, 175, 48, 0, 7);
   c.fill();
+  if (b.config.field === "convoy" || b.config.field === "citadel") {
+    const dark = b.config.field === "citadel";
+    for (let layer = 0; layer < 3; layer++) {
+      c.fillStyle = dark
+        ? ["#526575", "#3c5161", "#30434a"][layer]
+        : ["#7b9691", "#567b75", "#395f57"][layer];
+      for (let i = 0; i < 7; i++) {
+        const x = i * 230 - layer * 80,
+          peak = 120 + layer * 65 + (i % 3) * 22;
+        c.beginPath();
+        c.moveTo(x - 180, 460);
+        c.lineTo(x + 50, peak);
+        c.lineTo(x + 250, 460);
+        c.closePath();
+        c.fill();
+        if (layer === 0) {
+          c.fillStyle = "#b8c9bf";
+          c.beginPath();
+          c.moveTo(x + 50, peak);
+          c.lineTo(x + 15, peak + 55);
+          c.lineTo(x + 50, peak + 37);
+          c.lineTo(x + 80, peak + 52);
+          c.closePath();
+          c.fill();
+          c.fillStyle = dark ? "#526575" : "#7b9691";
+        }
+      }
+    }
+    c.fillStyle = dark ? "#243b42" : "#254b43";
+    for (let x = 25; x < 1250; x += 73) {
+      const y = 360 + Math.sin(x / 160) * 25;
+      c.fillRect(x, y, 5, 66);
+      for (let j = 0; j < 3; j++) {
+        c.beginPath();
+        c.moveTo(x + 3, y - 32 + j * 17);
+        c.lineTo(x - 17, y + 9 + j * 17);
+        c.lineTo(x + 23, y + 9 + j * 17);
+        c.closePath();
+        c.fill();
+      }
+    }
+    return;
+  }
   for (let layer = 0; layer < 3; layer++) {
     c.fillStyle = ["#68847c", "#5b746b", "#496158"][layer];
     c.beginPath();
@@ -124,6 +168,10 @@ export function drawEraTank(
   b: Battle,
   time: number,
 ) {
+  if (b.boss && t.side === "ai") {
+    drawBoss(c, t, b, time);
+    return;
+  }
   const modern = b.config.era === "modern",
     blue = t.side === "player",
     heavy = !blue && b.config.field !== "normandy",

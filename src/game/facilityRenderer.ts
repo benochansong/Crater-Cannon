@@ -1,3 +1,4 @@
+import { drawConvoy } from "./operationRenderer";
 import type { Battle } from "./engine";
 export function drawFacility(
   c: CanvasRenderingContext2D,
@@ -6,6 +7,10 @@ export function drawFacility(
 ) {
   const f = b.facility;
   if (!f) return;
+  if (b.convoy) {
+    drawConvoy(c, b, time);
+    return;
+  }
   const ratio = f.hp / f.maxHp,
     alive = f.hp > 0,
     base = f.y - 8 + f.height / 2;

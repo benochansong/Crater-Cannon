@@ -71,7 +71,27 @@ export function saveCampaign(p: CampaignProgress) {
   }
 }
 export const missionGrade = (r: BattleResult): Grade => {
-  const o = r.objective;
+  const o = r.objective,
+    op = r.operation;
+  if (op?.type === "escort")
+    return o &&
+      o.hp >= 50 &&
+      r.hp >= 50 &&
+      (r.round ?? 99) <= 12 &&
+      op.kills === 3
+      ? "S"
+      : o && o.hp >= 25 && r.hp >= 25
+        ? "A"
+        : "B";
+  if (op?.type === "boss")
+    return op.weakness > 0 &&
+      r.hp >= 60 &&
+      (r.round ?? 99) <= 10 &&
+      op.defenses > 0
+      ? "S"
+      : r.hp >= 30 && (r.round ?? 99) <= 15
+        ? "A"
+        : "B";
   if (o?.type === "defend")
     return o.hp >= 50 &&
       r.hp >= 60 &&

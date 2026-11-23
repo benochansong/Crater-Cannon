@@ -8,8 +8,8 @@ export interface CollisionTarget extends Vec {
   height?: number;
 }
 export interface ObjectiveConfig {
-  type: "defend" | "destroy-objective";
-  kind: "comms" | "radar";
+  type: "defend" | "destroy-objective" | "escort";
+  kind: "comms" | "radar" | "truck";
   name: string;
   x: number;
   hp: number;
@@ -18,7 +18,7 @@ export interface ObjectiveConfig {
 export interface Facility extends CollisionTarget {
   side: "objective";
   owner: Side;
-  kind: "comms" | "radar";
+  kind: "comms" | "radar" | "truck";
   name: string;
   maxHp: number;
   width: number;
@@ -40,7 +40,10 @@ export type MissionReason =
   | "defended"
   | "target-destroyed"
   | "time-limit"
-  | "no-ammo";
+  | "no-ammo"
+  | "convoy-lost"
+  | "escorted"
+  | "boss-destroyed";
 export function facilityY(
   terrain: Float64Array,
   x: number,
@@ -61,15 +64,20 @@ export function createFacility(
 ): Facility {
   return {
     side: "objective",
-    owner: c.type === "defend" ? "player" : "ai",
+    owner: c.type === "destroy-objective" ? "ai" : "player",
     kind: c.kind,
     name: c.name,
     x: c.x,
-    y: facilityY(terrain, c.x),
+    y: facilityY(
+      terrain,
+      c.x,
+      c.kind === "truck" ? 90 : 96,
+      c.kind === "truck" ? 46 : 100,
+    ),
     hp: c.hp,
     maxHp: c.hp,
-    width: 96,
-    height: 100,
+    width: c.kind === "truck" ? 90 : 96,
+    height: c.kind === "truck" ? 46 : 100,
     hurt: 0,
     destroyedAge: 0,
   };
@@ -84,6 +92,7 @@ export function objectiveVerdict(
 ): { outcome: Outcome; reason: MissionReason } | null {
   if (playerHp <= 0) return { outcome: "defeat", reason: "player-lost" };
   if (!f) return { outcome: "defeat", reason: "facility-lost" };
+  if (c.type === "escort") return null; // Checkpoint evidence is evaluated by escortVerdict.
   if (c.type === "defend") {
     if (f.hp <= 0) return { outcome: "defeat", reason: "facility-lost" };
     if (enemyHp <= 0 || rounds >= c.rounds)
@@ -106,6 +115,14 @@ export function missionSucceeded(config: BattleConfig, r: BattleResult) {
     return false;
   const c = config.objective,
     o = r.objective;
+  if (config.boss)
+    return (
+      r.missionId === config.missionId &&
+      r.enemyHp <= 0 &&
+      r.operation?.type === "boss" &&
+      r.operation.phase === 3 &&
+      (r.round ?? Infinity) <= config.boss.rounds
+    );
   if (!c) return r.enemyHp <= 0;
   if (
     !o ||
@@ -120,6 +137,13 @@ export function missionSucceeded(config: BattleConfig, r: BattleResult) {
     o.hp > c.hp
   )
     return false;
+  if (c.type === "escort")
+    return (
+      o.hp > 0 &&
+      r.operation?.type === "escort" &&
+      r.operation.checkpoint === 5 &&
+      r.operation.kills === 3
+    );
   return c.type === "defend"
     ? o.hp > 0 && (r.enemyHp <= 0 || o.completedRounds >= c.rounds)
     : o.hp <= 0 && o.completedRounds <= c.rounds;
@@ -131,4 +155,7 @@ export const REASON_TEXT: Record<MissionReason, string> = {
   "target-destroyed": "레이더망 무력화 · 작전 목표 달성",
   "time-limit": "제한 라운드를 넘겼습니다.",
   "no-ammo": "목표를 공격할 수 있는 탄약이 없습니다.",
+  "convoy-lost": "보급 차량이 파괴되어 호송 작전에 실패했습니다.",
+  escorted: "보급 차량 목적지 도착 · 호송 작전 성공",
+  "boss-destroyed": "특수 지휘전차 격파 · 북부 방어선 돌파",
 };

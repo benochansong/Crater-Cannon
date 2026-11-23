@@ -9,9 +9,12 @@ export type Field =
   | "fortress"
   | "frontier"
   | "signal"
-  | "radar";
+  | "radar"
+  | "convoy"
+  | "citadel";
 export interface BattleConfig {
   objective?: ObjectiveConfig;
+  boss?: { rounds: number };
   spawns?: { player: number; ai: number };
   initialHp?: { player: number; ai: number };
   winCondition?: "destroy" | "hp-verdict";

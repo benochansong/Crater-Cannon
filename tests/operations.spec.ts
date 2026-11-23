@@ -114,7 +114,7 @@ test("legacy four-mission save unlocks defense, survive six rounds, then destroy
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await fixture(page, 4);
-  await expect(page.getByText("보급 점수 800 · 완료 4/6")).toBeVisible();
+  await expect(page.getByText("보급 점수 800 · 완료 4/8")).toBeVisible();
   await page.screenshot({
     path: "test-results/phase7-campaign.png",
     fullPage: true,
@@ -166,7 +166,7 @@ test("legacy four-mission save unlocks defense, survive six rounds, then destroy
   const radar = await play(page, "radar");
   expect(radar.s.result.reason).toBe("target-destroyed");
   expect(radar.s.result.enemyHp).toBeGreaterThan(0);
-  await expect(page.getByText(/FRONTLINE COMPLETE · 6\/6/)).toBeVisible();
+  await expect(page.getByRole("button", {name:"다음 임무",exact:true})).toBeVisible();
   await page.screenshot({
     path: "test-results/phase7-radar-victory.png",
     fullPage: true,
@@ -182,7 +182,7 @@ test("legacy four-mission save unlocks defense, survive six rounds, then destroy
   expect((await snap(page)).stats.shots).toBe(0);
   await page.reload();
   await page.getByRole("button", { name: /스토리 캠페인/ }).click();
-  await expect(page.getByText("보급 점수 1550 · 완료 6/6")).toBeVisible();
+  await expect(page.getByText("보급 점수 1550 · 완료 6/8")).toBeVisible();
   expect(
     await page.evaluate(() => localStorage.getItem("crater.records")),
   ).toBeNull();
