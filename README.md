@@ -2,13 +2,13 @@
 
 > 시대는 바뀌어도, 전장을 바꾸는 것은 한 번의 선택이다.
 
-**Phase 5 — CHRONICLES OF WAR · 1.4.0**
+**Phase 6 — TANK MOBILITY & TERRAIN TACTICS · 1.5.0**
 
 React + TypeScript + Canvas 2D로 만든 한국어 싱글 플레이 포격 게임입니다. WWII 3개 임무와 가상의 현대전 1개 임무를 순서대로 진행하거나, 기존 현대전 자유 전투를 플레이할 수 있습니다. 계정·백엔드·유료 API·외부 에셋 요청 없이 실행됩니다.
 
-![캠페인 선택](docs/screenshots/phase5-campaign.png)
+![단거리 이동과 포격](docs/screenshots/phase6-short-stop.png)
 
-[11항목 구현·검증 보고](docs/PHASE5.md) · [Phase 4 기록](docs/PHASE4.md)
+[11항목 구현·검증 보고](docs/PHASE6.md) · [Phase 5 캠페인 기록](docs/PHASE5.md) · [Phase 4 기록](docs/PHASE4.md)
 
 ## 실행
 
@@ -47,14 +47,16 @@ E2E는 4187, 프로덕션 스모크는 4188을 사용합니다. 테스트 모드
 
 ## 조작
 
+- **A/D 또는 좌우 버튼 길게 누르기**: 정상 공격 턴마다 총 60 이동. 왕복 합산, 정지 후 발사 가능. 지형 위 점선은 실제 도달 범위.
 - 전장 드래그 / ↑↓: 포신 각도, ←→: 세기, Shift: 미세 조절.
 - Space: 발사 / 드론 공격. 숫자키: 무기 카드에 표시된 번호.
 - 드론: 출격 후 WASD / 방향키 또는 터치 패드로 5초 비행.
 - 유도탄: 상대 차량 또는 목표 지정 버튼 → 조준 → 발사. 제한된 추적 3.2초.
 - E: 출격 대응 창 4초 안에 EMP. 설정에서 자동 EMP 선택 가능.
 - R: 현대전 방어막. **적 공격 중 반응하면 턴 소비 없음**. 일반 포격·공중 지원 시작에는 2.5초 대응 시간이 추가됩니다.
-- 방어·이동: 정비 HP +28, 최대 100, 1턴, 연속 사용 불가. 사전 방어막 1턴. 이동 최대 145, 1턴.
+- 방어·이동: 정비 HP +28, 최대 100, 1턴, 연속 사용 불가. 사전 방어막 1턴. 장거리 이동 최대 145, 공격 턴 사용. 단거리 이동을 시작한 턴에는 장거리 불가.
 - WWII 연막: 다음 적 포격의 실제 발사 각도·세기에 오차. 엄폐: 다음 적 공격 피해 35% 감소(철갑탄에는 15%). 각각 2회, 1턴.
+- 항공 지원 대응 턴에는 단거리 이동 불가. 기존 행동 하나만 선택합니다.
 - 지원: 종류 → 목표 구역 → 요청. 상대 행동 1회 뒤 실행. 현대 자유 전투에서는 **헬기 또는 폭격기 합계 1회**.
 - Esc: 설정·일시정지. 백그라운드 탭에서도 전투 정지.
 
@@ -90,7 +92,9 @@ E2E는 4187, 프로덕션 스모크는 4188을 사용합니다. 테스트 모드
 - `src/game/renderer.ts`, `tacticalRenderer.ts`, `audio.ts`: Canvas 효과·지원 기체·합성 음향.
 - `src/components/Arsenal.tsx`, `main.tsx`, `style.css`: 조작·단축키·캠페인 연결·반응형 UI.
 - `src/game/phase5.test.ts`, `tests/campaign.spec.ts`: 시대 규칙·진지·저장·연속 임무 검증.
-- `scripts/balance-phase5.ts`: 70경기 재현 및 [측정 JSON](docs/balance-phase5.json).
+- `movement.ts`, `mobilityRenderer.ts`, `Mobility.tsx`: 연속 경로 검사·단거리 UI·궤도/먼지.
+- `src/game/phase6.test.ts`, `tests/mobility.spec.ts`: 이동·입력·AI 회귀 검증.
+- `scripts/balance-phase6.ts`: 동일 정책 70경기 재현 및 [측정 JSON](docs/balance-phase6.json). Phase 5 결과는 이전 파일에 보존합니다.
 
 기존 `crater.settings`, `crater.records`, 조작 안내 키는 그대로 유지합니다. 캠페인 결과는 자유 전투 기록에 추가하지 않아 기존 기록을 밀어내지 않습니다. 캠페인 저장에는 완료·해금 임무, 현재 선택, 최고 등급, 보급 점수, 장비 해금, 전환 시청 여부가 들어갑니다. 전투 도중의 상태는 저장하지 않으며 다시 출격합니다. 저장 불가 시 창 안에서 진행하고 경고를 표시합니다.
 

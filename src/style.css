@@ -2511,3 +2511,114 @@ h2 {
 .air-cards {
   gap: 5px 10px;
 }
+
+/* Phase 6: hold-to-drive controls stay separate from turn-consuming actions. */
+.mobility-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 9px 20px;
+  background: #e7e9d6;
+  border-bottom: 1px solid #b8c3ac;
+  color: #304e40;
+}
+.mobility-summary {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+.mobility-summary strong {
+  white-space: nowrap;
+}
+.mobility-summary progress {
+  width: 95px;
+  height: 7px;
+  accent-color: #597e55;
+}
+.mobility-summary b {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.mobility-summary span {
+  color: #536951;
+}
+.mobility-buttons {
+  display: flex;
+  gap: 6px;
+}
+.mobility-buttons button {
+  touch-action: none;
+  user-select: none;
+  min-width: 64px;
+  min-height: 38px;
+  border: 1px solid #a9b99a;
+  background: #f6f5e6;
+  border-radius: 6px;
+  color: #304e40;
+  font-weight: 800;
+}
+.mobility-buttons button:active {
+  background: #c1d7ab;
+}
+.mobility-buttons small {
+  display: block;
+  font-size: 9px;
+  font-weight: 400;
+}
+.mobility-buttons button:disabled {
+  opacity: 0.45;
+}
+.mobility-hint {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 12px;
+  max-width: 430px;
+  padding: 12px 15px;
+  border-radius: 9px;
+  background: #263d33ee;
+  color: #f3f1db;
+  font-size: 12px;
+  line-height: 1.6;
+  z-index: 4;
+  box-shadow: 0 5px 16px #102e3425;
+}
+.mobility-hint button {
+  margin-left: 10px;
+  padding: 3px 10px;
+  border: 1px solid #acc694;
+  border-radius: 4px;
+  color: #eff7db;
+  background: transparent;
+}
+@media (min-width: 1051px) {
+  .app {
+    max-width: min(1600px, calc((100dvh - 452px) * 2 + 7vw));
+  }
+}
+@media (max-width: 740px) {
+  .mobility-panel {
+    padding: 7px 10px;
+    gap: 8px;
+  }
+  .mobility-summary {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    font-size: 10px;
+  }
+  .mobility-summary progress {
+    width: 65px;
+  }
+  .mobility-summary span {
+    flex-basis: 100%;
+  }
+  .mobility-buttons button {
+    min-width: 49px;
+    min-height: 42px;
+  }
+  .mobility-hint {
+    max-width: calc(100% - 24px);
+  }
+}

@@ -355,8 +355,8 @@ export function Arsenal({
           >
             <TacticalIcon kind="move" />
             <span>
-              <b>← 왼쪽 이동</b>
-              <small>최대 145 · 급경사 정지 · 1턴</small>
+              <b>← 왼쪽 이동 · 장거리</b>
+              <small>최대 145 · 공격 턴 사용</small>
             </span>
           </button>
           <button
@@ -366,8 +366,8 @@ export function Arsenal({
           >
             <TacticalIcon kind="move" />
             <span>
-              <b>오른쪽 이동 →</b>
-              <small>최대 145 · 급경사 정지 · 1턴</small>
+              <b>오른쪽 이동 → · 장거리</b>
+              <small>최대 145 · 공격 턴 사용</small>
             </span>
           </button>
         </div>
@@ -576,6 +576,7 @@ export function Arsenal({
             !(
               flying ||
               (ready &&
+                !b.player.mobility.input &&
                 (b.airSelection
                   ? b.airTarget !== null && b.canRequestAir(b.airSelection)
                   : b.weapon !== "missile" || b.target !== null))
@@ -592,7 +593,9 @@ export function Arsenal({
                 : ready
                   ? b.weapon === "drone"
                     ? "드론 출격"
-                    : "발사!"
+                    : b.player.mobility.input
+                      ? "정지 후 발사"
+                      : "발사!"
                   : "대기 중"}
           </strong>
           <small>SPACE</small>

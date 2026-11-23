@@ -1,3 +1,4 @@
+import { drawTracks, drawMobility } from "./mobilityRenderer";
 import { drawCampaignBackground, drawEraTank } from "./campaignRenderer";
 import { drawTactics } from "./tacticalRenderer";
 import { Camera } from "./camera";
@@ -279,6 +280,7 @@ export class Renderer {
     ctx.translate(this.camera.x, this.camera.y);
     ctx.scale(this.camera.scale, this.camera.scale);
     this.terrain(ctx, game);
+    if (!options.menu) drawMobility(ctx, game);
     if (
       game.phase === "aim" &&
       !options.menu &&
@@ -682,6 +684,7 @@ export class Renderer {
       ctx.arc(i, 11, 3, 0, 7);
       ctx.fill();
     }
+    drawTracks(ctx, t);
     ctx.fillStyle = dark;
     ctx.beginPath();
     ctx.roundRect(-34, -9, 68, 17, 5);

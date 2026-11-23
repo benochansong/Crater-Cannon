@@ -8,6 +8,11 @@ export class Sound {
     gain: GainNode;
     pan: StereoPannerNode;
   } | null = null;
+  private engineLoop: {
+    source: OscillatorNode;
+    gain: GainNode;
+    filter: BiquadFilterNode;
+  } | null = null;
   volume = 0.55;
   muted = false;
   unlock() {
@@ -220,7 +225,59 @@ export class Sound {
       /* Optional flight audio may fail on restricted browsers. */
     }
   }
+
+  drive(speed: number, era: "ww2" | "modern") {
+    try {
+      if (!this.context || !this.master) return;
+      if (speed <= 0 || this.muted) {
+        if (this.engineLoop) {
+          const { source, gain, filter } = this.engineLoop;
+          source.stop();
+          source.disconnect();
+          gain.disconnect();
+          filter.disconnect();
+          this.engineLoop = null;
+          if (!this.muted) this.tone(55, 25, 0.12, "triangle", 0, 0.07);
+        }
+        return;
+      }
+      const c = this.context;
+      if (!this.engineLoop) {
+        const source = c.createOscillator(),
+          gain = c.createGain(),
+          filter = c.createBiquadFilter();
+        source.type = "sawtooth";
+        filter.type = "lowpass";
+        gain.gain.value = 0;
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.master);
+        source.start();
+        this.engineLoop = { source, gain, filter };
+        this.tone(25, 55, 0.1, "triangle", 0, 0.05);
+      }
+      const loop = this.engineLoop;
+      loop.source.frequency.setTargetAtTime(
+        (era === "ww2" ? 30 : 44) + speed * 0.55,
+        c.currentTime,
+        0.07,
+      );
+      loop.filter.frequency.setTargetAtTime(
+        era === "ww2" ? 170 : 230,
+        c.currentTime,
+        0.08,
+      );
+      loop.gain.gain.setTargetAtTime(
+        0.07 + Math.min(speed, 95) * 0.001,
+        c.currentTime,
+        0.04,
+      );
+    } catch {
+      /* Optional engine audio. */
+    }
+  }
   stop() {
+    this.drive(0, "modern");
     this.flight(null);
     for (const source of this.active) {
       try {

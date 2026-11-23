@@ -4,7 +4,14 @@ import { chooseTactic } from "./tactics";
 import type { TacticalAction } from "./tactics";
 import { AIR, airDamage, makeOperation } from "./airSupport";
 import type { AirKind, AirReservation, AirOperation } from "./airSupport";
-import { canTraverse, MOVE_DISTANCE, MOVE_SPEED } from "./movement";
+import {
+  canTraverse,
+  traverseBlock,
+  reachable,
+  SHORT_DISTANCE,
+  MOVE_DISTANCE,
+  MOVE_SPEED,
+} from "./movement";
 import { repairAmount, REPAIR_TIME, shieldDamage } from "./defense";
 export const WIDTH = 1280;
 export const HEIGHT = 640;
@@ -170,6 +177,15 @@ export interface Tank extends Vec {
   hurt: number;
   vy: number;
   vx: number;
+  mobility: {
+    remaining: number;
+    used: boolean;
+    input: number;
+    speed: number;
+    travel: number;
+    reason: string;
+    dust: number;
+  };
   ammo: Record<WeaponId, number>;
   emp: number;
   repairs: number;
@@ -658,6 +674,9 @@ export class Battle {
   private resumeAfterAir: Side | null = null;
   private accumulator = 0;
   private aiPlan: ShotPlan | null = null;
+  private aiAdjustment = 0;
+  private aiWeapon: WeaponId = "shell";
+  private mobilityRandom: () => number;
   private aiAction: TacticalAction | null = null;
   readonly random: () => number;
   constructor(
@@ -676,6 +695,7 @@ export class Battle {
       );
     }
     this.originalTerrain = this.terrain.slice();
+    this.mobilityRandom = seeded(this.seed ^ 0x763831);
     this.tanks = [this.makeTank("player", 210), this.makeTank("ai", 1070)];
     this.wind = this.rollWind();
     this.aiMemory = {
@@ -697,6 +717,15 @@ export class Battle {
       hurt: 0,
       vx: 0,
       vy: 0,
+      mobility: {
+        remaining: SHORT_DISTANCE,
+        used: false,
+        input: 0,
+        speed: 0,
+        travel: 0,
+        reason: "",
+        dust: 0,
+      },
       ammo: Object.fromEntries(
         WEAPON_IDS.map((w) => [
           w,
@@ -842,8 +871,163 @@ export class Battle {
     this.events.push({ type: "shield", x: t.x, y: t.y - 20, side });
     return true;
   }
+
+  adjustmentReason(side: Side = "player"): string {
+    const t = this.tankFor(side);
+    if (!this.config.movement || (side === "ai" && this.fortified))
+      return "이 임무에서는 이동할 수 없습니다";
+    if (!this.canAct(side)) return "정상 공격 턴에 이동할 수 있습니다";
+    if (this.pendingAir?.responseStarted && this.pendingAir.owner !== side)
+      return "항공 지원 대응: 한 행동만 선택하세요";
+    if (t.mobility.remaining <= 0.001) return "이번 턴 이동 거리 소진";
+    if (Math.abs(t.y - support(this.terrain, t.x)) > 2 || Math.abs(t.vx) > 3)
+      return "지면에 안착하는 중";
+    return "";
+  }
+  canAdjust(side: Side = "player") {
+    return !this.adjustmentReason(side);
+  }
+  adjustmentRange(side: Side = "player") {
+    const t = this.tankFor(side),
+      other = this.tankFor(side === "player" ? "ai" : "player");
+    return reachable(
+      this.terrain,
+      t.x,
+      this.canAdjust(side) ? t.mobility.remaining : 0,
+      other.x,
+    );
+  }
+  adjust(direction: number, side: Side = "player"): boolean {
+    const t = this.tankFor(side),
+      m = t.mobility;
+    if (direction === 0) {
+      m.input = 0;
+      m.speed = 0;
+      return true;
+    }
+    if (![-1, 1].includes(direction)) return false;
+    const reason =
+      this.adjustmentReason(side) ||
+      traverseBlock(
+        this.terrain,
+        t.x,
+        t.x + direction * 0.5,
+        this.tankFor(side === "player" ? "ai" : "player").x,
+      );
+    if (reason) {
+      m.reason = reason;
+      this.adjust(0, side);
+      return false;
+    }
+    if (m.input !== direction) m.speed = 0;
+    m.input = direction;
+    t.vx = 0; // Residual knockback must not add uncharged distance to a controlled move.
+    m.reason = "";
+    return true;
+  }
+  private drive(t: Tank) {
+    const m = t.mobility;
+    if (!m.input) return;
+    const reason = this.adjustmentReason(t.side);
+    if (reason) {
+      m.reason = reason;
+      this.adjust(0, t.side);
+      return;
+    }
+    const direction = m.input;
+    const slope =
+      (ground(this.terrain, t.x + direction * 22) - ground(this.terrain, t.x)) /
+      22;
+    const topSpeed = 64 / (1 + Math.max(0, -slope) * 1.5);
+    m.speed = Math.min(
+      topSpeed,
+      m.speed + (this.config.era === "ww2" ? 160 : 230) * STEP,
+    );
+    const distance = Math.min(
+      m.speed * STEP,
+      m.remaining,
+      t.side === "ai" ? this.aiAdjustment : Infinity,
+    );
+    const block = traverseBlock(
+      this.terrain,
+      t.x,
+      t.x + direction * distance,
+      this.tankFor(t.side === "player" ? "ai" : "player").x,
+    );
+    if (block) {
+      m.reason = block;
+      this.adjust(0, t.side);
+      return;
+    }
+    t.x += direction * distance;
+    t.y = support(this.terrain, t.x);
+    t.vy = 0;
+    m.used = true;
+    m.travel += direction * distance;
+    m.remaining = Math.max(0, m.remaining - distance);
+    if (t.side === "ai")
+      this.aiAdjustment = Math.max(0, this.aiAdjustment - distance);
+    if (m.remaining < 0.001) {
+      m.remaining = 0;
+      m.reason = "이번 턴 이동 거리 소진";
+      this.adjust(0, t.side);
+    }
+  }
+  private planAdjustment(): boolean {
+    if (this.round === 1 || !this.canAdjust("ai")) return false;
+    const chance =
+      this.difficulty === "easy"
+        ? 0.12
+        : this.difficulty === "normal"
+          ? 0.32
+          : 0.55;
+    if (this.mobilityRandom() >= chance) return false;
+    const range = this.adjustmentRange("ai");
+    const distance =
+      this.difficulty === "easy" ? 20 : this.difficulty === "normal" ? 36 : 55;
+    const candidates = [-1, 1]
+      .map((direction) => {
+        const x =
+          direction < 0
+            ? Math.max(range.left, this.ai.x - distance)
+            : Math.min(range.right, this.ai.x + distance);
+        const height = support(this.terrain, x);
+        // Prefer a clear elevated firing position and a useful artillery separation.
+        let score = -Math.abs(Math.abs(x - this.player.x) - 700) * 0.025;
+        if (this.difficulty !== "easy") score += (this.ai.y - height) * 0.35;
+        if (this.difficulty === "hard") {
+          const ahead = ground(this.terrain, x - 50);
+          score -= Math.max(0, height - ahead - 25) * 0.5;
+        }
+        return { direction, distance: Math.abs(x - this.ai.x), score };
+      })
+      .filter((c) => c.distance > 8)
+      .sort((a, b) => b.score - a.score);
+    const best = candidates[0];
+    if (!best) return false;
+    this.aiAdjustment = best.distance;
+    return this.adjust(best.direction, "ai");
+  }
+  private aimAI() {
+    const plan = planAI(
+      this.ai,
+      this.player,
+      this.terrain,
+      this.wind,
+      this.difficulty,
+      this.aiMemory,
+      this.random,
+    );
+    plan.weapon = this.aiWeapon;
+    this.aiPlan = plan;
+  }
+
   canMove(direction: number, side: Side = "player") {
     if (
+      (this.tankFor(side).mobility.used &&
+        !(
+          this.pendingAir?.responseStarted && this.pendingAir.owner !== side
+        )) ||
       !this.config.movement ||
       (side === "ai" && this.fortified) ||
       !this.canAct(side) ||
@@ -876,6 +1060,7 @@ export class Battle {
   canRequestAir(kind: AirKind, side: Side = "player") {
     return (
       this.canAct(side) &&
+      !this.tankFor(side).mobility.input &&
       this.allowedSupports.includes(kind) &&
       (side === "player" ||
         !this.config.enemySupports ||
@@ -1125,6 +1310,8 @@ export class Battle {
   }
   private shoot(tank: Tank, weapon: WeaponId): boolean {
     if (
+      tank.mobility.input !== 0 ||
+      tank.mobility.speed > 0 ||
       !this.allowedWeapons.includes(weapon) ||
       this.projectile ||
       this.drone ||
@@ -1228,6 +1415,8 @@ export class Battle {
   private tick() {
     if (this.phase === "over") return;
     this.elapsed += STEP;
+    for (const tank of this.tanks)
+      tank.mobility.dust = Math.max(0, tank.mobility.dust - STEP);
     if (
       this.canShield("ai") &&
       this.isReaction("ai") &&
@@ -1243,6 +1432,9 @@ export class Battle {
       return;
     }
     for (const tank of this.tanks) {
+      if (!this.canAct(tank.side)) this.adjust(0, tank.side);
+      this.drive(tank);
+      if (tank.mobility.speed > 0) tank.mobility.dust = 0.45;
       tank.recoil = Math.max(0, tank.recoil - STEP * 3.8);
       tank.hurt = Math.max(0, tank.hurt - STEP * 2);
       if (this.drone && (this.phase === "deploy" || this.phase === "drone"))
@@ -1281,6 +1473,8 @@ export class Battle {
           canTraverse(this.terrain, t.x, t.x + a.direction * step, other.x)
         ) {
           t.x += a.direction * step;
+          t.mobility.travel += a.direction * step;
+          t.mobility.dust = 0.45;
           a.distance += step;
           // The suspension follows existing ground support, never a teleport to a destination.
           t.y = Math.min(t.y, support(this.terrain, t.x));
@@ -1409,6 +1603,17 @@ export class Battle {
       )
         this.nextTurn();
     } else if (this.phase === "ai-aim") {
+      if (this.aiAdjustment > 0) {
+        if (this.ai.mobility.input && this.aiAdjustment > 0.001) return;
+        this.aiAdjustment = 0;
+        this.adjust(0, "ai");
+        this.aimAI();
+        this.timer = 0.8;
+      } else if (this.ai.mobility.input) {
+        this.adjust(0, "ai");
+        this.aimAI();
+        this.timer = 0.8;
+      }
       this.timer -= STEP;
       if (this.aiAction && this.timer <= 0) {
         const a = this.aiAction;
@@ -1545,6 +1750,14 @@ export class Battle {
     const next =
       this.resumeAfterAir ?? (this.turn === "player" ? "ai" : "player");
     this.resumeAfterAir = null;
+    for (const t of this.tanks) this.adjust(0, t.side);
+    this.aiAdjustment = 0;
+    if (!(this.pendingAir?.responseStarted && this.pendingAir.owner !== next)) {
+      const m = this.tankFor(next).mobility;
+      m.remaining = SHORT_DISTANCE;
+      m.used = false;
+      m.reason = "";
+    }
     if (next === "ai") {
       this.turn = "ai";
       this.phase = "ai-aim";
@@ -1570,17 +1783,8 @@ export class Battle {
         tacticalWeapon = "drone";
       if (!this.allowedWeapons.includes(tacticalWeapon))
         tacticalWeapon = this.allowedWeapons[0];
-      const plan = planAI(
-        this.ai,
-        this.player,
-        this.terrain,
-        this.wind,
-        this.difficulty,
-        this.aiMemory,
-        this.random,
-      );
-      plan.weapon = tacticalWeapon;
-      this.aiPlan = plan;
+      this.aiWeapon = tacticalWeapon;
+      if (!this.planAdjustment()) this.aimAI();
     } else {
       this.turn = "player";
       this.phase = "aim";

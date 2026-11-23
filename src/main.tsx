@@ -1,3 +1,4 @@
+import { Mobility } from "./components/Mobility";
 import {
   CampaignSelect,
   MissionBriefing,
@@ -109,6 +110,8 @@ function App() {
       last = now;
       const stopped = paused || document.hidden;
       if (screen === "battle" && !stopped) {
+        if (battle.phase !== "aim" && battle.phase !== "drone")
+          held.current.clear();
         if (
           battle.phase === "drone" &&
           battle.turn === "player" &&
@@ -149,6 +152,15 @@ function App() {
           setScreen("result");
         }
       }
+      sound.drive(
+        screen === "battle" && !stopped
+          ? Math.max(
+              ...battle.tanks.map((t) => t.mobility.speed),
+              battle.action?.kind === "move" ? 95 : 0,
+            )
+          : 0,
+        battle.config.era,
+      );
       sound.flight(
         screen === "battle" && !stopped
           ? (battle.projectile ?? battle.drone)
@@ -190,6 +202,7 @@ function App() {
     refresh((n) => n + 1);
   }
   function fire() {
+    if (battle.phase === "aim" && battle.player.mobility.input) return;
     sound.unlock();
     if (
       battle.airSelection
@@ -290,6 +303,10 @@ function App() {
     if (!down) {
       held.current.delete(key);
       if (!held.current.size) battle.steerDrone(0, 0);
+      if (key === "a" || key === "d")
+        battle.adjust(
+          Number(held.current.has("d")) - Number(held.current.has("a")),
+        );
       return;
     }
     if (
@@ -340,11 +357,29 @@ function App() {
     }
     const target = event.target;
     if (
+      (target instanceof HTMLElement && target.isContentEditable) ||
+      target instanceof HTMLTextAreaElement ||
       target instanceof HTMLInputElement ||
       target instanceof HTMLSelectElement ||
       target instanceof HTMLButtonElement
     )
       return;
+    if (key === "a" || key === "d") {
+      if (event.repeat && !held.current.has(key)) return;
+      event.preventDefault();
+      if (battle.canAdjust()) {
+        held.current.add(key);
+        sound.unlock();
+        battle.adjust(
+          Number(held.current.has("d")) - Number(held.current.has("a")),
+        );
+        finishTutorial();
+        markWeaponHint("mobility");
+        setTutorial(false);
+        setHint(null);
+      }
+      return;
+    }
     const step = event.shiftKey ? 0.25 : 1;
     if (
       [
@@ -378,16 +413,19 @@ function App() {
     const clear = () => {
       held.current.clear();
       battle.steerDrone(0, 0);
+      battle.adjust(0);
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     window.addEventListener("blur", clear);
     document.addEventListener("visibilitychange", clear);
+    document.addEventListener("focusin", clear);
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
       window.removeEventListener("blur", clear);
       document.removeEventListener("visibilitychange", clear);
+      document.removeEventListener("focusin", clear);
     };
   }, [battle]);
   useEffect(() => {
@@ -395,6 +433,7 @@ function App() {
       sound.stop();
       held.current.clear();
       battle.steerDrone(0, 0);
+      battle.adjust(0);
     }
   }, [paused, battle, sound]);
   function drag(event: React.PointerEvent<HTMLCanvasElement>) {
@@ -462,7 +501,7 @@ function App() {
           aria-label="크레이터 캐논 메인 메뉴"
         >
           <span className="brand-icon">✦</span> CRATER CANNON{" "}
-          <span className="edition">CHRONICLES OF WAR</span>
+          <span className="edition">TANK MOBILITY & TERRAIN TACTICS</span>
         </button>
         <div className="top-actions">
           <span className="local-badge">싱글 플레이 · 로컬 전투</span>
@@ -761,36 +800,53 @@ function App() {
             <small>포격 · 긴급 정비 · 방어막 · 항공 지원</small>
           </div>
         ) : (
-          <Arsenal
-            key={battle.seed}
-            battle={battle}
-            ready={ready}
-            onSelect={select}
-            onAim={aim}
-            onFire={fire}
-            onEmp={emp}
-            onLock={lock}
-            onSteer={(x, y) => battle.steerDrone(x, y)}
-            onFieldDefense={(kind) => tactic(() => battle.fieldDefense(kind))}
-            onRepair={() => tactic(() => battle.repair())}
-            onShield={() => tactic(() => battle.activateShield())}
-            onMove={(direction) => tactic(() => battle.move(direction))}
-            onAirSelect={(kind) => {
-              battle.selectAir(kind);
-              refresh((n) => n + 1);
-            }}
-            onAirTarget={(x) => {
-              battle.setAirTarget(x);
-              refresh((n) => n + 1);
-            }}
-          />
+          <>
+            <Mobility
+              key={"mobility-" + battle.seed}
+              battle={battle}
+              ready={ready}
+              onDrive={(direction) => {
+                sound.unlock();
+                battle.adjust(direction);
+                if (direction) {
+                  finishTutorial();
+                  setTutorial(false);
+                  setHint(null);
+                }
+                refresh((n) => n + 1);
+              }}
+            />
+            <Arsenal
+              key={battle.seed}
+              battle={battle}
+              ready={ready}
+              onSelect={select}
+              onAim={aim}
+              onFire={fire}
+              onEmp={emp}
+              onLock={lock}
+              onSteer={(x, y) => battle.steerDrone(x, y)}
+              onFieldDefense={(kind) => tactic(() => battle.fieldDefense(kind))}
+              onRepair={() => tactic(() => battle.repair())}
+              onShield={() => tactic(() => battle.activateShield())}
+              onMove={(direction) => tactic(() => battle.move(direction))}
+              onAirSelect={(kind) => {
+                battle.selectAir(kind);
+                refresh((n) => n + 1);
+              }}
+              onAirTarget={(x) => {
+                battle.setAirTarget(x);
+                refresh((n) => n + 1);
+              }}
+            />
+          </>
         )}
       </section>
       <footer className="page-footer">
         <span>한 발의 포탄이 전장의 운명을 바꾼다.</span>
         <div>
           <button onClick={() => setOverlay("help")}>조작 안내</button>
-          <span>PHASE 5 / CHRONICLES OF WAR</span>
+          <span>PHASE 6 / TERRAIN TACTICS</span>
         </div>
       </footer>
       {screen === "result" && result && !selectedMission && (
@@ -986,13 +1042,16 @@ function App() {
               <p className="modern-help">
                 정비는 HP 28을 회복하며 연속 사용할 수 없습니다. 현대 방어막은
                 적 공격 중 R로 반응하면 턴을 소비하지 않고 피해를 50% 줄입니다.
-                사전 전개와 이동은 1턴입니다. 자유 전투의 헬기·폭격기는 합계
-                1회이며, 요청 후 상대에게 대응 행동 1회를 제공합니다. EMP는
-                드론·유도탄 출격 중 4초 안에 E로 사용합니다. 캠페인에서는 시대와
-                임무에 맞는 장비만 사용할 수 있습니다. WWII의 연막은 다음 적
-                포격 조준을 흔들고, 엄폐는 다음 공격 피해를 35% 줄입니다.
-                캠페인은 40라운드 안에 적을 격파해야 하며, 자유 전투는 남은 HP로
-                판정합니다.
+                A/D 단거리 이동은 턴마다 총 60이며, 정지 후 발사할 수 있습니다.
+                왕복 거리도 합산됩니다. 사전 전개와 최대 145 장거리 이동은
+                1턴입니다. 단거리 이동 후에는 장거리를 선택할 수 없고, 지원 대응
+                턴에는 단거리 이동을 사용할 수 없습니다. 자유 전투의
+                헬기·폭격기는 합계 1회이며, 요청 후 상대에게 대응 행동 1회를
+                제공합니다. EMP는 드론·유도탄 출격 중 4초 안에 E로 사용합니다.
+                캠페인에서는 시대와 임무에 맞는 장비만 사용할 수 있습니다.
+                WWII의 연막은 다음 적 포격 조준을 흔들고, 엄폐는 다음 공격
+                피해를 35% 줄입니다. 캠페인은 40라운드 안에 적을 격파해야 하며,
+                자유 전투는 남은 HP로 판정합니다.
               </p>
               <div className="help-steps">
                 <p>

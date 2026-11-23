@@ -179,20 +179,29 @@ test("announced enemy helicopter is reduced by one shield across all three impac
   expect(hp - s.tanks[0].hp).toBeGreaterThan(0);
   expect(s.supportStats.ai.helicopter.shots).toBe(1);
 });
-test("move out of a bomber warning zone, preserve turn order and deform three ground sites", async ({
+test("terrain-limited bomber evasion reduces damage, preserves turn order and deforms three ground sites", async ({
   page,
 }) => {
   await start(page, 1);
   for (let i = 0; i < 4; i++) await miss(page);
   let s = await snap(page);
   expect(s.pendingAir.kind).toBe("bomber");
+  await expect(
+    page.getByRole("button", { name: "단거리 왼쪽 이동", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "단거리 오른쪽 이동", exact: true }),
+  ).toBeDisabled();
   const hp = s.tanks[0].hp,
     x = s.tanks[0].x,
-    revision = s.revision;
+    revision = s.revision,
+    stationaryDamage = Math.round(
+      30 * (1 - Math.abs(x - s.pendingAir.targetX) / 170),
+    );
   await page.screenshot({ path: "test-results/phase4-warning.png" });
   await page.getByRole("button", { name: "방어 · 이동", exact: true }).click();
-  await page.getByRole("button", { name: /왼쪽 이동/ }).click();
-  await page.clock.runFor(600);
+  await page.getByRole("button", { name: /왼쪽 이동 · 장거리/ }).click();
+  await page.clock.runFor(100);
   s = await snap(page);
   expect(s.tanks[0].x).toBeLessThan(x);
   expect(s.action.kind).toBe("move");
@@ -202,7 +211,10 @@ test("move out of a bomber warning zone, preserve turn order and deform three gr
   await waitForState(page, (s) => s.air === null);
   s = await snap(page);
   expect(x - s.tanks[0].x).toBeLessThanOrEqual(145.001);
-  expect(hp - s.tanks[0].hp).toBeLessThan(10);
+  // The new shared slope limit stops this crater escape early; a flat 145-unit escape is covered in phase4.test.ts.
+  expect(x - s.tanks[0].x).toBeGreaterThan(40);
+  expect(x - s.tanks[0].x).toBeLessThan(60);
+  expect(hp - s.tanks[0].hp).toBeLessThan(stationaryDamage);
   expect(s.revision - revision).toBe(3);
   expect(s.pendingAir).toBeNull();
 });

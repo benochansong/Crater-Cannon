@@ -1,3 +1,4 @@
+import { drawTracks } from "./mobilityRenderer";
 import type { Battle, Tank } from "./engine";
 export function drawCampaignBackground(c: CanvasRenderingContext2D, b: Battle) {
   if (b.config.field === "valley") return;
@@ -135,6 +136,7 @@ export function drawEraTank(
     c.arc(x, 10, 3, 0, 7);
     c.fill();
   }
+  drawTracks(c, t, b.config.era, [-25, -13, -1, 11, 23]);
   c.fillStyle = base;
   c.beginPath();
   c.moveTo(-35, 2);
