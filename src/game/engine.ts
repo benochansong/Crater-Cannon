@@ -1302,6 +1302,12 @@ export class Battle {
   canAdjust(side: Side = "player") {
     return !this.adjustmentReason(side);
   }
+  private get tankClearance() {
+    return Math.max(
+      68,
+      (this.player.width ?? 58) / 2 + (this.ai.width ?? 58) / 2 + 10,
+    );
+  }
   adjustmentRange(side: Side = "player") {
     const t = this.tankFor(side),
       other = this.tankFor(side === "player" ? "ai" : "player");
@@ -1310,6 +1316,7 @@ export class Battle {
       t.x,
       this.canAdjust(side) ? t.mobility.remaining : 0,
       other.x,
+      this.tankClearance,
     );
     const f = this.facility;
     if (f && f.hp > 0 && !this.convoy) {
@@ -1334,6 +1341,7 @@ export class Battle {
       from,
       to,
       this.tankFor(side === "player" ? "ai" : "player").x,
+      this.tankClearance,
     );
   }
   adjust(direction: number, side: Side = "player"): boolean {

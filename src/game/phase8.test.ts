@@ -407,5 +407,34 @@ it.each([6, 7])(
       expect(b.convoy.kills).toBe(3);
       expect(b.convoy.checkpoint).toBe(5);
     } else expect(b.boss!.transitions).toEqual([1, 2, 3]);
-  }, 20000,
+  },
+  20000,
+);
+
+it.each(["player", "ai"] as const)(
+  "keeps %s movement and range outside the enlarged boss hull",
+  (side) => {
+    const b = make(7);
+    b.skipScene();
+    b.terrain.fill(500);
+    b.player.x = 910;
+    b.ai.x = 1050;
+    b.player.y = b.ai.y = 483;
+    b.turn = side;
+    b.phase = side === "player" ? "aim" : "ai-aim";
+    b.timer = 100;
+    if (side === "ai")
+      (b as unknown as { aiAdjustment: number }).aiAdjustment = 60;
+    const range = b.adjustmentRange(side);
+    expect(
+      side === "player" ? b.ai.x - range.right : range.left - b.player.x,
+    ).toBeGreaterThanOrEqual(93);
+    expect(b.adjust(side === "player" ? 1 : -1, side)).toBe(true);
+    run(b, 1.5);
+    expect(b.ai.x - b.player.x).toBeGreaterThanOrEqual(93);
+    const t = side === "player" ? b.player : b.ai;
+    expect(t.mobility.remaining).toBeGreaterThan(0);
+    expect(t.mobility.input).toBe(0);
+    expect(t.mobility.reason).toContain("다른 전차");
+  },
 );

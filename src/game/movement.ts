@@ -7,6 +7,7 @@ export function traverseBlock(
   from: number,
   to: number,
   opponent: number,
+  clearance = 68,
 ): string {
   const at = (x: number) =>
     terrain[Math.max(0, Math.min(terrain.length - 1, Math.round(x)))];
@@ -15,7 +16,8 @@ export function traverseBlock(
   for (let i = 1; i <= count; i++) {
     const x = from + ((to - from) * i) / count;
     if (x < 35 || x > terrain.length - 36) return "전장 경계";
-    if (Math.abs(x - opponent) < 68) return "다른 전차가 경로를 막고 있습니다";
+    if (Math.abs(x - opponent) < clearance)
+      return "다른 전차가 경로를 막고 있습니다";
     for (const offset of [-22, 0, 22]) {
       const delta = at(x + offset) - at(previous + offset);
       if (delta < -1.8) return "급경사 또는 크레이터 벽";
@@ -31,21 +33,23 @@ export function canTraverse(
   from: number,
   to: number,
   opponent: number,
+  clearance = 68,
 ) {
-  return !traverseBlock(terrain, from, to, opponent);
+  return !traverseBlock(terrain, from, to, opponent, clearance);
 }
 export function reachable(
   terrain: Float64Array,
   from: number,
   budget: number,
   opponent: number,
+  clearance = 68,
 ) {
   const end = (direction: number) => {
     let x = from;
     for (let used = 0; used < budget - 1e-6;) {
       const step = Math.min(0.5, budget - used);
       const next = x + step * direction;
-      if (!canTraverse(terrain, x, next, opponent)) break;
+      if (!canTraverse(terrain, x, next, opponent, clearance)) break;
       x = next;
       used += step;
     }
