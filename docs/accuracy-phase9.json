@@ -1,0 +1,102 @@
+[
+  {
+    "shot": 1,
+    "target": "A",
+    "angle": 45,
+    "power": 25,
+    "wind": 0,
+    "predicted": {
+      "x": 688.4687012382253,
+      "y": 470.0285209839971,
+      "direct": null,
+      "escaped": false
+    },
+    "actual": {
+      "x": 688.4687012382253,
+      "y": 470.0285209839971,
+      "direct": null,
+      "escaped": false
+    },
+    "error": 0
+  },
+  {
+    "shot": 2,
+    "target": "A",
+    "angle": 74,
+    "power": 40,
+    "wind": 0,
+    "predicted": {
+      "x": 551.9037023360921,
+      "y": 440.82425397744436,
+      "direct": "ai",
+      "escaped": false
+    },
+    "actual": {
+      "x": 551.9037023360921,
+      "y": 440.82425397744436,
+      "direct": "ai",
+      "escaped": false
+    },
+    "error": 0
+  },
+  {
+    "shot": 3,
+    "target": "B",
+    "angle": 34,
+    "power": 49,
+    "wind": 0,
+    "predicted": {
+      "x": 1034.8413670008183,
+      "y": 456.0209674087279,
+      "direct": "ai",
+      "escaped": false
+    },
+    "actual": {
+      "x": 1034.8413670008183,
+      "y": 456.0209674087279,
+      "direct": "ai",
+      "escaped": false
+    },
+    "error": 0
+  },
+  {
+    "shot": 4,
+    "target": "C",
+    "angle": 22,
+    "power": 85,
+    "wind": -3,
+    "predicted": {
+      "x": 979.999446286844,
+      "y": 321.3530903457194,
+      "direct": "ai",
+      "escaped": false
+    },
+    "actual": {
+      "x": 979.999446286844,
+      "y": 321.3530903457194,
+      "direct": "ai",
+      "escaped": false
+    },
+    "error": 0
+  },
+  {
+    "shot": 5,
+    "target": "C",
+    "angle": 34,
+    "power": 52,
+    "wind": 5,
+    "predicted": {
+      "x": 979,
+      "y": 333.3295253394963,
+      "direct": "ai",
+      "escaped": false
+    },
+    "actual": {
+      "x": 979,
+      "y": 333.3295253394963,
+      "direct": "ai",
+      "escaped": false
+    },
+    "error": 0
+  }
+]

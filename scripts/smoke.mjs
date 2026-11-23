@@ -67,10 +67,24 @@ try {
     .locator(".turn-banner")
     .filter({ hasText: "상대 차례" })
     .waitFor({ timeout: 18000 });
+  await page.getByRole("button", { name: "크레이터 캐논 메인 메뉴" }).click();
+  await page.getByRole("button", { name: /사격 훈련 FIRING RANGE/ }).click();
+  await page.getByRole("button", { name: /TARGET A/ }).click();
+  await page.getByRole("button", { name: "학습 건너뛰기" }).click();
+  await page.locator("button.fire").click();
+  await page
+    .locator(".shot-history")
+    .filter({ hasText: "#1" })
+    .waitFor({ timeout: 18000 });
+  assert.match(await page.locator(".training-stats").innerText(), /발사\s*1/);
+  await page.screenshot({
+    path: "test-results/production-training.png",
+    fullPage: true,
+  });
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   console.log(
-    "Production smoke passed: menu, fire, AI turn, no page errors, no external requests, QA bridge absent.",
+    "Production smoke passed: menu, fire, AI turn, training shot/history, no page errors, no external requests, QA bridge absent.",
   );
 } finally {
   await browser?.close();

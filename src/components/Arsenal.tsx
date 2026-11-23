@@ -229,7 +229,9 @@ export function Arsenal({
                 <span>
                   {weaponInfo(id, b.config.era).short}
                   <small>
-                    {id === "shell" ? "무제한" : `${b.player.ammo[id]}회 남음`}
+                    {b.player.ammo[id] === Infinity
+                      ? "무제한"
+                      : `${b.player.ammo[id]}회 남음`}
                   </small>
                 </span>
                 <kbd>{b.allowedWeapons.indexOf(id) + 1}</kbd>
@@ -249,20 +251,22 @@ export function Arsenal({
               ["defense", "방어 · 이동"],
               ["air", "항공 지원"],
             ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              aria-pressed={category === id}
-              onClick={() => {
-                setCategory(id);
-                if (id !== "air") onSelect(b.weapon);
-              }}
-            >
-              {label}
-            </button>
-          ))}
+          )
+            .filter(([id]) => !b.config.training || id === "attack")
+            .map(([id, label]) => (
+              <button
+                key={id}
+                aria-pressed={category === id}
+                onClick={() => {
+                  setCategory(id);
+                  if (id !== "air") onSelect(b.weapon);
+                }}
+              >
+                {label}
+              </button>
+            ))}
         </div>
-        {b.config.era === "modern" && (
+        {b.config.era === "modern" && !b.config.training && (
           <button
             className={"emp-always " + (b.canEmp("player") ? "available" : "")}
             disabled={!b.canEmp("player")}
@@ -288,6 +292,7 @@ export function Arsenal({
             1,
           )}
           {b.config.era === "modern" &&
+            !b.config.training &&
             group(["drone", "missile"], "현대전 무기", 4)}
         </div>
       )}
@@ -415,7 +420,9 @@ export function Arsenal({
         <span>
           {b.airSelection ? "대응: 이동 · 방어막 (EMP 무효)" : selected.counter}
         </span>
-        {b.config.era === "modern" ? (
+        {b.config.training ? (
+          <small>고정 표적 · 반격 없음</small>
+        ) : b.config.era === "modern" ? (
           <small>
             상대 EMP {b.ai.emp}/2 · 드론 {b.ai.ammo.drone} · 유도탄{" "}
             {b.ai.ammo.missile}
@@ -514,7 +521,9 @@ export function Arsenal({
                 max="80"
                 step=".25"
                 value={b.player.angle}
-                disabled={!ready || b.weapon === "drone"}
+                disabled={
+                  !ready || b.weapon === "drone" || b.trainingLesson === 1
+                }
                 onChange={(e) => onAim(Number(e.target.value), b.player.power)}
               />
               <div className="range-label">
@@ -537,7 +546,9 @@ export function Arsenal({
                 min="20"
                 max="100"
                 value={b.player.power}
-                disabled={!ready || b.weapon === "drone"}
+                disabled={
+                  !ready || b.weapon === "drone" || b.trainingLesson === 2
+                }
                 onChange={(e) => onAim(b.player.angle, Number(e.target.value))}
               />
               <div className="range-label">

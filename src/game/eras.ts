@@ -13,6 +13,7 @@ export type Field =
   | "convoy"
   | "citadel";
 export interface BattleConfig {
+  training?: import("./training").TrainingTarget;
   objective?: ObjectiveConfig;
   boss?: { rounds: number };
   spawns?: { player: number; ai: number };

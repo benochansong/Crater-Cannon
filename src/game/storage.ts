@@ -5,6 +5,7 @@ export interface Settings {
   shake: boolean;
   autoEmp: boolean;
   difficulty: Difficulty;
+  aimGuide: import("./aimPrediction").AimGuideMode;
 }
 export const defaults: Settings = {
   volume: 0.55,
@@ -12,11 +13,15 @@ export const defaults: Settings = {
   shake: true,
   autoEmp: false,
   difficulty: "normal",
+  aimGuide: "default",
 };
 export function loadSettings(): Settings {
   try {
     const v = JSON.parse(localStorage.getItem("crater.settings") || "{}");
     return {
+      aimGuide: ["default", "off", "extended"].includes(v.aimGuide)
+        ? v.aimGuide
+        : "default",
       volume:
         typeof v.volume === "number" && Number.isFinite(v.volume)
           ? Math.max(0, Math.min(1, v.volume))

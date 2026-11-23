@@ -1,19 +1,12 @@
+import { PredictionCache, guideLevel } from "./aimPrediction";
+import type { AimGuideMode } from "./aimPrediction";
 import { drawOperationField } from "./operationRenderer";
 import { drawFacility } from "./facilityRenderer";
 import { drawTracks, drawMobility } from "./mobilityRenderer";
 import { drawCampaignBackground, drawEraTank } from "./campaignRenderer";
 import { drawTactics } from "./tacticalRenderer";
 import { Camera } from "./camera";
-import {
-  Battle,
-  WIDTH,
-  HEIGHT,
-  WEAPONS,
-  launch,
-  STEP,
-  advance,
-  advanceMissile,
-} from "./engine";
+import { Battle, WIDTH, HEIGHT, WEAPONS, ground } from "./engine";
 import type { Drone, GameEvent, Tank, WeaponId } from "./engine";
 interface Particle {
   x: number;
@@ -44,6 +37,8 @@ interface Label {
   color: string;
 }
 export class Renderer {
+  aimGuide: AimGuideMode = "default";
+  prediction = new PredictionCache();
   particles: Particle[] = [];
   bursts: Burst[] = [];
   labels: Label[] = [];
@@ -278,7 +273,27 @@ export class Renderer {
         Math.sin(this.time * 110) * this.shake,
         Math.cos(this.time * 93) * this.shake * 0.6,
       );
-    this.camera.update(game.projectile ?? game.drone, dt, options.menu);
+    const preview =
+      !options.menu && game.phase === "aim"
+        ? this.prediction.get(game, this.aimGuide)
+        : null;
+    const level = guideLevel(game, this.aimGuide);
+    const visible = preview?.points.slice(
+      0,
+      preview.uncertain
+        ? 10
+        : level === "partial"
+          ? Math.ceil(preview.points.length * 0.65)
+          : undefined,
+    );
+    const peak = visible?.reduce((a, b) => (a.y < b.y ? a : b));
+    this.camera.update(
+      game.projectile ??
+        game.drone ??
+        (peak && peak.y < 0 ? { ...peak, vy: 0 } : null),
+      dt,
+      options.menu,
+    );
     if (game.scene && game.boss) {
       const focus = Math.sin(
         Math.PI * (1 - game.scene.remaining / game.scene.duration),
@@ -303,6 +318,7 @@ export class Renderer {
       !game.airSelection
     )
       this.guide(ctx, game);
+    if (!options.menu) this.history(ctx, game);
     if (game.drone) this.drawDrone(ctx, game.drone);
     if (!options.menu && game.weapon === "missile" && game.phase === "aim") {
       const t =
@@ -327,7 +343,26 @@ export class Renderer {
       );
     }
     for (const t of game.tanks)
-      if (game.config.field !== "valley") drawEraTank(ctx, t, game, this.time);
+      if (game.config.training && t.side === "ai") {
+        ctx.save();
+        ctx.translate(t.x, t.y - 8);
+        ctx.strokeStyle = "#fff0be";
+        ctx.fillStyle = "#33776b";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 29, 23, 0, 0, 7);
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, 12, 0, 7);
+        ctx.stroke();
+        ctx.fillStyle = "#fff0be";
+        ctx.font = "bold 16px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("TARGET " + game.config.training, 0, -38);
+        ctx.restore();
+      } else if (game.config.field !== "valley")
+        drawEraTank(ctx, t, game, this.time);
       else
         this.tank(
           ctx,
@@ -777,37 +812,93 @@ export class Renderer {
     ctx.restore();
   }
   private guide(ctx: CanvasRenderingContext2D, game: Battle) {
-    const p = launch(game.player, game.weapon);
-    if (p.weapon === "missile") {
-      p.guided = true;
-      p.target =
-        game.target ??
-        (game.selectedTarget === "objective" && game.facility?.owner === "ai"
-          ? "objective"
-          : "ai");
+    const p = this.prediction.get(game, this.aimGuide),
+      level = guideLevel(game, this.aimGuide);
+    if (!p) return;
+    const points = p.points.slice(
+      0,
+      p.uncertain
+        ? 10
+        : level === "partial"
+          ? Math.ceil(p.points.length * 0.65)
+          : undefined,
+    );
+    ctx.save();
+    ctx.strokeStyle = "#8fe8f7";
+    ctx.globalAlpha = p.uncertain ? 0.4 : 0.78;
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([8, 7]);
+    ctx.beginPath();
+    points.forEach((v, i) => (i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (
+      p.impact &&
+      !p.impact.escaped &&
+      level !== "short" &&
+      !p.special &&
+      !p.uncertain
+    ) {
+      const approximate = level === "partial" || p.uncertain;
+      const x = approximate ? Math.round(p.impact.x / 50) * 50 : p.impact.x;
+      const y = approximate ? ground(game.terrain, x) : p.impact.y;
+      ctx.strokeStyle =
+        p.reason === "direct" && !approximate
+          ? "#c5ff91"
+          : p.reason === "terrain" || p.reason === "obstacle"
+            ? "#ffbd76"
+            : "#8fe8f7";
+      ctx.beginPath();
+      ctx.ellipse(x, y, approximate ? 35 : 10, approximate ? 12 : 10, 0, 0, 7);
+      ctx.stroke();
+      ctx.font = "bold 13px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.fillText(
+        approximate
+          ? p.reason === "terrain" || p.reason === "obstacle"
+            ? "⚠ 차폐 범위"
+            : "예상 범위"
+          : p.reason === "direct"
+            ? "예상 직접 명중"
+            : p.reason === "terrain" || p.reason === "obstacle"
+              ? "⚠ 차폐"
+              : "예상 착탄",
+        x,
+        y - (p.reason === "direct" ? 70 : 22),
+      );
     }
-    ctx.fillStyle = "#fffadd";
-    for (let i = 0; i < 75; i++) {
-      if (
-        p.weapon === "missile"
-          ? advanceMissile(
-              p,
-              game.terrain,
-              game.collisionTargets,
-              game.wind,
-              STEP,
-            )
-          : advance(p, game.terrain, game.collisionTargets, game.wind, STEP)
-      )
-        break;
-      if (i % 10 === 0) {
-        ctx.globalAlpha = 0.9 - i / 100;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 3, 0, 7);
-        ctx.fill();
-      }
-    }
-    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+  private history(ctx: CanvasRenderingContext2D, game: Battle) {
+    ctx.save();
+    ctx.font = "bold 13px sans-serif";
+    ctx.textAlign = "center";
+    game.shotHistory.forEach((s, i) => {
+      if (!s.impact) return;
+      const x = Math.max(20, Math.min(WIDTH - 20, s.impact.x));
+      const y = Math.min(s.impact.y, ground(game.terrain, x)) - 32 - i * 17;
+      ctx.globalAlpha = 1 - i * 0.22;
+      ctx.strokeStyle = "#ffae68";
+      ctx.fillStyle = "#ffd39b";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, y + 5);
+      ctx.lineTo(x, Math.min(HEIGHT - 20, s.impact.y));
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x - 5, y);
+      ctx.lineTo(x + 5, y);
+      ctx.moveTo(x, y - 5);
+      ctx.lineTo(x, y + 5);
+      ctx.stroke();
+      ctx.fillText(
+        s.escaped ? "이탈 #" + s.sequence : "이전 착탄 #" + s.sequence,
+        x,
+        y - 10,
+      );
+    });
+    ctx.restore();
   }
   private effects(ctx: CanvasRenderingContext2D, dt: number) {
     for (const pulse of this.pulses) {

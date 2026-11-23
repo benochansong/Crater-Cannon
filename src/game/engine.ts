@@ -22,6 +22,10 @@ import type {
   MissionReason,
 } from "./objectives";
 import { FREE_BATTLE, ERA_WEAPONS, ERA_SUPPORTS } from "./eras";
+import { analyzeImpact } from "./shotHistory";
+import type { ShotSetup, ShotRecord } from "./shotHistory";
+import { newTrainingStats, countTraining } from "./training";
+import type { TrainingStats } from "./training";
 import type { BattleConfig, Era } from "./eras";
 import { chooseTactic } from "./tactics";
 import type { TacticalAction } from "./tactics";
@@ -264,6 +268,7 @@ export interface Stats {
   damage: number;
 }
 export interface BattleResult extends Stats {
+  assisted?: boolean;
   operation?: OperationRecord;
   objective?: ObjectiveRecord;
   reason?: MissionReason;
@@ -607,6 +612,23 @@ const weaponStats = () =>
     Stats
   >;
 export class Battle {
+  assisted = false;
+  shotHistory: ShotRecord[] = [];
+  specialHistory: ShotRecord[] = [];
+  private pendingShot: ShotSetup | null = null;
+  trainingStats: TrainingStats | null = null;
+  trainingLesson = 0;
+  trainingLock = 45;
+  setTrainingLesson(lesson: number) {
+    if (!this.config.training || this.phase !== "aim") return;
+    this.trainingLesson = lesson;
+    this.trainingLock = lesson === 1 ? this.player.angle : this.player.power;
+    if (lesson === 3) this.wind = 3;
+  }
+  setTrainingWind(wind: number) {
+    if (this.config.training && this.phase === "aim")
+      this.wind = Math.round(clamp(wind, -5, 5));
+  }
   convoy: ConvoyState | null = null;
   boss: BossState | null = null;
   scene: OperationScene | null = null;
@@ -871,6 +893,12 @@ export class Battle {
         (_, x) => 450 + 22 * Math.sin(x / 230) + 8 * Math.sin(x / 95),
       );
     }
+    if (config.training)
+      this.terrain = Float64Array.from(this.terrain, (_, x) =>
+        config.training === "C"
+          ? 470 - 140 * Math.exp(-Math.pow((x - 1000) / 175, 4))
+          : 470,
+      );
     this.originalTerrain = this.terrain.slice();
     this.mobilityRandom = seeded(this.seed ^ 0x763831);
     this.tanks = [
@@ -881,7 +909,15 @@ export class Battle {
       this.facility = createFacility(config.objective, this.terrain);
     if (config.objective?.type === "destroy-objective")
       this.selectedTarget = "objective";
-    this.wind = this.rollWind();
+    this.wind = config.training ? 0 : this.rollWind();
+    if (config.training) {
+      this.trainingStats = newTrainingStats();
+      for (const t of this.tanks) {
+        t.emp = 0;
+        t.shields = 0;
+        t.repairs = 0;
+      }
+    }
     this.aiMemory = {
       bias: (this.random() < 0.5 ? -1 : 1) * AI_PROFILE[difficulty].initialBias,
       shots: 0,
@@ -1660,7 +1696,7 @@ export class Battle {
     owner: Side,
     weapon?: WeaponId,
   ): number {
-    if (t.hp <= 0) return 0;
+    if (t.hp <= 0 || (this.config.training && t.side === "player")) return 0;
     if (t.side !== owner) {
       const armor =
         t.side === "ai"
@@ -1701,8 +1737,16 @@ export class Battle {
   }
   aim(angle: number, power: number) {
     if (this.phase !== "aim") return;
-    this.player.angle = clamp(angle, 10, 80);
-    this.player.power = clamp(power, 20, 100);
+    this.player.angle = clamp(
+      this.trainingLesson === 1 ? this.trainingLock : angle,
+      10,
+      80,
+    );
+    this.player.power = clamp(
+      this.trainingLesson === 2 ? this.trainingLock : power,
+      20,
+      100,
+    );
   }
   select(weapon: WeaponId) {
     if (
@@ -1815,10 +1859,26 @@ export class Battle {
       tank.angle = clamp(tank.angle + (this.random() - 0.5) * 8, 10, 80);
       tank.power = clamp(tank.power + (this.random() - 0.5) * 10, 20, 100);
     }
+    if (tank.side === "player")
+      this.pendingShot = {
+        weapon,
+        angle: tank.angle,
+        power: tank.power,
+        wind: this.wind,
+        source: { x: tank.x, y: tank.y },
+        muzzle: { ...muzzle(tank) },
+        target: {
+          x: this.targetBody.x,
+          y: this.targetBody.y,
+          side: this.targetBody.side,
+        },
+      };
     tank.ammo[weapon]--;
     this.turn = tank.side;
     this.lastAction[tank.side] = weapon;
     this.combat[tank.side].shots++;
+    if (tank.side === "player" && this.trainingStats)
+      this.trainingStats.shots++;
     this.telemetry[tank.side][weapon].shots++;
     this.droneInput = { x: 0, y: 0 };
     if (weapon === "drone" || weapon === "missile") {
@@ -1872,7 +1932,8 @@ export class Battle {
     } else {
       this.phase = "flight";
       this.projectile = launch(tank, weapon);
-      this.guardTime = this.config.era === "modern" ? 2.5 : 0;
+      this.guardTime =
+        this.config.era === "modern" && !this.config.training ? 2.5 : 0;
     }
     tank.recoil = 1;
     this.events.push({
@@ -1885,6 +1946,8 @@ export class Battle {
     return true;
   }
   private finishAttack(hit: Impact | null, weapon: WeaponId, owner: Side) {
+    const impactVy = this.projectile?.vy ?? this.drone?.vy ?? 0;
+    const previousHits = this.stats.hits;
     this.lastImpact[owner] = hit;
     if (owner === "ai" && weapon !== "drone" && weapon !== "missile" && hit)
       (this.aiAttackTarget === "objective"
@@ -1905,6 +1968,33 @@ export class Battle {
     ) {
       this.boss.hits++;
       this.boss.plates = Math.max(0, 3 - this.boss.hits);
+    }
+    if (owner === "player" && this.pendingShot) {
+      const s = this.pendingShot;
+      const record: ShotRecord = {
+        ...s,
+        sequence: this.stats.shots,
+        impact: hit ? { ...hit } : null,
+        hit: this.stats.hits > previousHits,
+        escaped: !!hit?.escaped,
+        kind:
+          weapon === "drone"
+            ? "drone"
+            : weapon === "missile"
+              ? "missile"
+              : "ballistic",
+        reason: analyzeImpact(s, hit, impactVy),
+        error:
+          hit && !hit.escaped
+            ? Math.hypot(hit.x - s.target.x, hit.y - (s.target.y - 8))
+            : null,
+      };
+      const records =
+        record.kind === "ballistic" ? this.shotHistory : this.specialHistory;
+      records.unshift(record);
+      records.splice(3);
+      if (this.trainingStats) countTraining(this.trainingStats, record);
+      this.pendingShot = null;
     }
     this.expireShield(owner);
     this.phase = "resolve";
@@ -2201,8 +2291,9 @@ export class Battle {
       const force =
         WEAPONS[weapon].push *
         Math.max(0, 1 - distance / (WEAPONS[weapon].radius + 25));
-      t.vx +=
-        Math.sign(t.x - hit.x || (owner === "player" ? 1 : -1)) * force * 5;
+      if (!this.config.training)
+        t.vx +=
+          Math.sign(t.x - hit.x || (owner === "player" ? 1 : -1)) * force * 5;
     }
     if (this.facility && this.facility.hp > 0) {
       const f = this.facility,
@@ -2242,6 +2333,20 @@ export class Battle {
     });
   }
   private nextTurn(skipCycle = false) {
+    if (this.config.training) {
+      for (const t of this.tanks) {
+        t.hp = 100;
+        t.vx = 0;
+      }
+      this.turn = "player";
+      this.phase = "aim";
+      this.round++;
+      this.guardTime = 0;
+      this.player.mobility.remaining = SHORT_DISTANCE;
+      this.player.mobility.used = false;
+      this.player.mobility.reason = "";
+      return;
+    }
     if (this.ai.hp <= 0 && this.pendingAir?.owner === "ai")
       this.pendingAir = null;
     const cycleEnded =
@@ -2318,6 +2423,7 @@ export class Battle {
       this.droneInput = { x: 0, y: 0 };
       this.result = {
         ...this.stats,
+        assisted: this.assisted,
         missionId: this.config.missionId,
         objective: this.objectiveRecord,
         operation: this.operationRecord,

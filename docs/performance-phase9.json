@@ -1,0 +1,14 @@
+{
+  "runtime": "v24.14.0",
+  "platform": "win32",
+  "kind": "Node microbenchmark; not a browser/mobile frame-rate measurement",
+  "simulations": 400,
+  "medianMs": 0.6186000000000149,
+  "p95Ms": 1.4773000000000138,
+  "maxMs": 3.086599999999976,
+  "maxSteps": 703,
+  "maxPoints": 90,
+  "cachedLookups": 20000,
+  "cachedTotalMs": 32.87450000000001,
+  "cacheCalculations": 1
+}

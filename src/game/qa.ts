@@ -5,6 +5,16 @@ export function attachQA(battle: Battle, renderer: Renderer) {
   const target = window as unknown as { __CRATER_QA__?: () => unknown };
   target.__CRATER_QA__ = () => ({
     config: structuredClone(battle.config),
+    aiming: {
+      level: renderer.aimGuide,
+      prediction: structuredClone(renderer.prediction.value),
+      calculations: renderer.prediction.calculations,
+    },
+    history: structuredClone(battle.shotHistory),
+    specialHistory: structuredClone(battle.specialHistory),
+    training: structuredClone(battle.trainingStats),
+    trainingLesson: battle.trainingLesson,
+    assisted: battle.assisted,
     convoy: battle.convoy ? { ...battle.convoy } : null,
     boss: battle.boss ? structuredClone(battle.boss) : null,
     scene: battle.scene ? { ...battle.scene } : null,

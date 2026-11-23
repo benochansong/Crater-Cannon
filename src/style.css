@@ -2826,3 +2826,393 @@ h2 {
     font-size: 11px;
   }
 }
+
+/* Phase 9: world-space aiming, compact practice controls. */
+.training-start {
+  background: #d2e9d5;
+  color: #28483d;
+  border: 2px solid #476958;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-weight: 800;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+.aiming-hud,
+.training-hud {
+  padding: 16px 22px;
+  background: #193c3a;
+  color: #eaf5df;
+  border-top: 1px solid #6b9282;
+  font-size: 13px;
+}
+.aim-heading,
+.aim-metrics,
+.training-stats,
+.training-controls {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.aim-heading {
+  justify-content: space-between;
+}
+.aim-heading small {
+  color: #97e0e6;
+  margin-left: 8px;
+}
+.aim-heading > span,
+.shot-history small {
+  font-size: 11px;
+  color: #b8d0bd;
+}
+.aim-metrics {
+  margin-top: 12px;
+  justify-content: space-between;
+}
+.aim-metrics b,
+.training-stats b {
+  font-size: 18px;
+  color: #f4dfb4;
+  margin-left: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.power-meter {
+  height: 5px;
+  background: #0c2629;
+  border-radius: 5px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+.power-meter i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #99d3b1, #a8eaf5);
+  transition: width 0.12s ease;
+}
+.aim-forecast {
+  margin: 7px 0 12px;
+  color: #b4edf1;
+}
+.shot-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+  border-top: 1px solid #587266;
+  padding-top: 10px;
+}
+.shot-history strong {
+  color: #ffc58b;
+}
+.shot-history small {
+  width: 100%;
+}
+.training-menu {
+  padding: 42px 30px;
+  background: #e7edd8;
+  border-radius: 20px;
+  color: #294b3c;
+  text-align: center;
+}
+.training-menu h1 {
+  font-size: 38px;
+  margin: 8px;
+}
+.training-targets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin: 32px 0;
+}
+.training-targets button {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  background: #f5f4e3;
+  padding: 24px;
+  border: 2px solid #78967a;
+  border-radius: 16px;
+  color: #294b3c;
+}
+.training-targets button:hover {
+  border-color: #367f80;
+  background: #fff9e5;
+}
+.target-symbol {
+  font-size: 52px;
+  color: #418c83;
+}
+.training-targets strong {
+  font-size: 21px;
+}
+.training-targets small {
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+.training-hud {
+  background: #304b3e;
+}
+.training-controls label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.training-controls input {
+  width: 110px;
+}
+.training-controls button,
+.training-lesson button,
+.training-controls select {
+  background: #e7edcf;
+  color: #294c3c;
+  border: 0;
+  border-radius: 6px;
+  padding: 9px;
+  font-weight: 700;
+}
+.training-stats {
+  margin: 14px 0;
+}
+.training-hud > small {
+  color: #c4d4bc;
+}
+.training-lesson {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #96b2a2;
+  border-radius: 8px;
+  background: #223d36;
+}
+.training-lesson p {
+  margin: 6px 0 12px;
+}
+.training-lesson button {
+  margin-right: 8px;
+}
+.training-health .pilot-card {
+  visibility: hidden;
+}
+.range-arena-label {
+  position: absolute;
+  top: 92px;
+  left: 20px;
+  border-radius: 8px;
+  padding: 9px 14px;
+  background: #183d3de8;
+  color: #d8efc3;
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+}
+@media (max-width: 600px) {
+  .aiming-hud,
+  .training-hud {
+    padding: 13px;
+  }
+  .aim-metrics {
+    gap: 9px 16px;
+    justify-content: flex-start;
+  }
+  .aim-heading > span {
+    width: 100%;
+  }
+  .training-menu {
+    padding: 24px 14px;
+  }
+  .training-targets {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .training-targets button {
+    padding: 15px;
+    gap: 5px;
+  }
+  .target-symbol {
+    font-size: 30px;
+  }
+  .training-controls {
+    gap: 12px;
+  }
+  .training-stats {
+    gap: 8px 14px;
+  }
+  .range-arena-label {
+    top: 105px;
+    font-size: 11px;
+    left: 10px;
+  }
+  .training-start {
+    padding: 9px 16px;
+  }
+}
+/* Keep all three entry points and secondary controls inside the title screen. */
+.is-menu .arena {
+  min-height: 500px;
+}
+.is-menu .title-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+}
+.is-menu .title-kicker,
+.is-menu .title-screen h1,
+.is-menu .slogan,
+.is-menu .title-tag {
+  margin: 0;
+}
+.is-menu .title-screen h1 {
+  font-size: clamp(64px, 7vw, 100px);
+}
+.is-menu .menu-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: min(440px, 100%);
+  margin: 8px 0 0;
+}
+.is-menu .campaign-start,
+.is-menu .secondary-actions {
+  grid-column: 1/-1;
+}
+.is-menu .menu-actions .start {
+  margin: 0;
+  height: 50px;
+  min-height: 50px;
+  font-size: 16px;
+  gap: 8px;
+}
+.is-menu .training-start {
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 6px 12px;
+  gap: 2px;
+}
+.is-menu .secondary-actions {
+  margin: 2px 0 0;
+}
+.is-menu .field-label {
+  top: 82%;
+}
+@media (max-width: 700px) {
+  .is-menu .arena {
+    min-height: 450px;
+  }
+  .is-menu .arena canvas {
+    position: absolute;
+    bottom: 0;
+    height: auto;
+    aspect-ratio: 1.55;
+  }
+  .is-menu .title-screen {
+    gap: 9px;
+    padding: 18px;
+  }
+  .is-menu .field-label {
+    display: none;
+  }
+  .is-menu .menu-actions {
+    gap: 9px;
+  }
+  .is-menu .campaign-start {
+    min-height: 44px;
+  }
+  .is-menu .key-hint {
+    display: none;
+  }
+}
+@media (min-width: 1051px) {
+  .app:has(.game-shell:not(.is-menu):not([hidden]):not(.is-training)) {
+    max-width: min(1600px, calc((100dvh - 452px) * 2 + 7vw + 290px));
+  }
+  .app:has(.game-shell:not([hidden]) .operation-panel) {
+    max-width: min(1600px, calc((100dvh - 555px) * 2 + 7vw + 290px));
+  }
+  .game-shell:not(.is-menu):not(.is-training) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 290px;
+  }
+  .game-shell:not(.is-menu):not(.is-training) > .arena {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .game-shell:not(.is-menu):not(.is-training) > .aiming-hud {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 16px;
+    border-left: 1px solid #6b9282;
+    border-top: 0;
+  }
+  .game-shell:not(.is-menu):not(.is-training) > :not(.arena):not(.aiming-hud) {
+    grid-column: 1/-1;
+  }
+  .game-shell:not(.is-training) .aim-heading {
+    gap: 8px;
+  }
+  .game-shell:not(.is-training) .aim-metrics {
+    gap: 10px 14px;
+    justify-content: flex-start;
+  }
+  .game-shell:not(.is-training) .aim-forecast {
+    line-height: 1.6;
+  }
+  .game-shell:not(.is-training) .shot-history {
+    line-height: 1.5;
+  }
+}
+.is-menu .arena {
+  width: 100%;
+  aspect-ratio: auto;
+  height: 500px;
+}
+@media (max-width: 700px) {
+  .is-menu .arena {
+    height: 450px;
+  }
+}
+@media (min-width: 1051px) and (max-height: 850px) {
+  .game-shell:not(.is-menu) .pilot-avatar {
+    display: none;
+  }
+  .game-shell:not(.is-menu) .pilot-card {
+    padding: 8px;
+  }
+  .game-shell:not(.is-menu) .pilot-heading {
+    gap: 5px;
+  }
+  .game-shell:not(.is-menu) .pilot-heading > div {
+    min-width: 0;
+    flex: 1;
+  }
+  .game-shell:not(.is-menu) .pilot-heading strong {
+    display: block;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .game-shell:not(.is-menu) .pilot-heading > b {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .game-shell:not(.is-menu) .pilot-heading small {
+    font-size: 9px;
+  }
+}
+@media (min-width: 1051px) and (max-height: 850px) {
+  .is-menu .field-label {
+    display: none;
+  }
+}
+.turn-banner,
+.tutorial,
+.arena-footer {
+  pointer-events: none;
+}

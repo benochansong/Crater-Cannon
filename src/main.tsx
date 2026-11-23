@@ -1,3 +1,13 @@
+import { AimingHUD } from "./components/AimingHUD";
+import { TrainingMenu, TrainingHUD } from "./components/TrainingMenu";
+import {
+  trainingConfig,
+  saveTraining,
+  trainingLessonSeen,
+  finishTrainingLesson,
+} from "./game/training";
+import type { TrainingTarget } from "./game/training";
+import type { AimGuideMode } from "./game/aimPrediction";
 import { BreakthroughHUD } from "./components/BreakthroughHUD";
 import { OperationHUD } from "./components/OperationHUD";
 import { missionSucceeded } from "./game/objectives";
@@ -59,7 +69,13 @@ function App() {
     () => new Battle(settings.difficulty, testSeed),
   );
   const [screen, setScreen] = useState<
-    "menu" | "battle" | "result" | "campaign" | "briefing" | "transition"
+    | "menu"
+    | "battle"
+    | "result"
+    | "campaign"
+    | "briefing"
+    | "transition"
+    | "training-menu"
   >("menu");
   const [overlay, setOverlay] = useState<
     "help" | "records" | "settings" | null
@@ -85,7 +101,10 @@ function App() {
     saveSettings(settings);
     sound.configure(settings.volume, settings.muted);
     battle.autoEmp = settings.autoEmp;
-  }, [settings, sound, battle]);
+    renderer.aimGuide = settings.aimGuide;
+    if (settings.aimGuide === "extended" && screen === "battle")
+      battle.assisted = true;
+  }, [settings, sound, battle, renderer, screen]);
   useEffect(() => () => sound.dispose(), [sound]);
   useEffect(() => {
     if (overlay) dialog.current?.showModal();
@@ -296,7 +315,27 @@ function App() {
     setOverlay(null);
     setTutorial(!tutorialSeen());
   }
+  function startTraining(id: TrainingTarget, carry = false) {
+    if (battle.trainingStats) saveTraining(battle.trainingStats);
+    const next = new Battle("easy", testSeed, trainingConfig(id));
+    if (carry && battle.trainingStats) {
+      next.trainingStats = { ...battle.trainingStats };
+      next.aim(battle.player.angle, battle.player.power);
+      next.wind = battle.wind;
+      next.setTrainingLesson(battle.trainingLesson);
+    } else if (!trainingLessonSeen()) next.setTrainingLesson(1);
+    held.current.clear();
+    setHint(null);
+    setTutorial(false);
+    setSelectedMission(null);
+    sound.unlock();
+    sound.stop();
+    setBattle(next);
+    setScreen("battle");
+    setOverlay(null);
+  }
   function menu() {
+    if (battle.trainingStats) saveTraining(battle.trainingStats);
     held.current.clear();
     setHint(null);
     sound.stop();
@@ -530,7 +569,7 @@ function App() {
           aria-label="크레이터 캐논 메인 메뉴"
         >
           <span className="brand-icon">✦</span> CRATER CANNON{" "}
-          <span className="edition">OPERATION BREAKTHROUGH</span>
+          <span className="edition">SMART AIMING SYSTEM</span>
         </button>
         <div className="top-actions">
           <span className="local-badge">싱글 플레이 · 로컬 전투</span>
@@ -556,6 +595,9 @@ function App() {
           브라우저 저장 공간을 사용할 수 없습니다. 현재 창에서는 진행을
           유지하지만 새로고침하면 사라질 수 있습니다.
         </p>
+      )}
+      {screen === "training-menu" && (
+        <TrainingMenu onStart={(id) => startTraining(id)} onBack={menu} />
       )}
       {screen === "campaign" && (
         <CampaignSelect
@@ -589,7 +631,7 @@ function App() {
           !["menu", "battle", "result"].includes(screen) ||
           (screen === "result" && !!selectedMission)
         }
-        className={`game-shell ${screen === "menu" ? "is-menu" : ""}`}
+        className={`game-shell ${screen === "menu" ? "is-menu" : ""} ${battle.config.training ? "is-training" : ""}`}
         aria-label="그린 밸리 전장"
       >
         <div className="arena">
@@ -742,6 +784,12 @@ function App() {
                   <span>자유 전투</span>
                   <span className="key-hint">PLAY</span>
                 </button>
+                <button
+                  className="training-start"
+                  onClick={() => setScreen("training-menu")}
+                >
+                  사격 훈련 <small>FIRING RANGE</small>
+                </button>
                 <div className="secondary-actions">
                   <button onClick={() => setOverlay("help")}>게임 방법</button>
                   <button onClick={() => setOverlay("records")}>
@@ -759,7 +807,11 @@ function App() {
             </div>
           ) : (
             <>
-              <div className="hud">
+              <div
+                className={
+                  "hud" + (battle.config.training ? " training-health" : "")
+                }
+              >
                 <div
                   className={`pilot-card ${battle.turn === "player" ? "active" : ""} ${battle.player.hp <= 25 ? "critical" : ""}`}
                 >
@@ -815,6 +867,11 @@ function App() {
                   </div>
                 </div>
               </div>
+              {battle.config.training && (
+                <div className="range-arena-label">
+                  ◎ {battle.enemyName} · 체력 제한 없는 연습
+                </div>
+              )}
               <div
                 className={`turn-banner ${battle.phase === "flight" || battle.phase === "resolve" || battle.phase === "air" ? "in-flight" : ""} ${battle.turn === "ai" ? "enemy-turn" : ""}`}
                 role="status"
@@ -831,11 +888,15 @@ function App() {
               <div className="arena-footer">
                 <span>
                   {battle.config.era === "ww2" ? "1944–1945" : "MODERN"}{" "}
-                  <i>{selectedMission?.location ?? "그린 밸리"}</i>
+                  <i>
+                    {battle.config.training
+                      ? "사격 훈련장"
+                      : (selectedMission?.location ?? "그린 밸리")}
+                  </i>
                 </span>
                 <span>
-                  {timeLabel(Math.round(battle.elapsed))} · {battle.stats.shots}{" "}
-                  SHOTS
+                  {timeLabel(Math.round(battle.elapsed))} ·{" "}
+                  {battle.trainingStats?.shots ?? battle.stats.shots} SHOTS
                 </span>
               </div>
             </>
@@ -858,6 +919,24 @@ function App() {
           </div>
         ) : (
           <>
+            {battle.config.training && (
+              <TrainingHUD
+                battle={battle}
+                onTarget={(id) => startTraining(id, true)}
+                onRestart={() => startTraining(battle.config.training!)}
+                onLesson={(n) => {
+                  battle.setTrainingLesson(n);
+                  if (n === 0) finishTrainingLesson();
+                  refresh((v) => v + 1);
+                }}
+                onUpdate={() => refresh((v) => v + 1)}
+              />
+            )}
+            <AimingHUD
+              battle={battle}
+              cache={renderer.prediction}
+              mode={settings.aimGuide}
+            />
             <BreakthroughHUD
               battle={battle}
               ready={ready}
@@ -917,7 +996,7 @@ function App() {
         <span>한 발의 포탄이 전장의 운명을 바꾼다.</span>
         <div>
           <button onClick={() => setOverlay("help")}>조작 안내</button>
-          <span>PHASE 8 / OPERATION BREAKTHROUGH</span>
+          <span>PHASE 9 / SMART AIMING SYSTEM</span>
         </div>
       </footer>
       {screen === "result" && result && !selectedMission && (
@@ -954,6 +1033,7 @@ function App() {
                     ? "다음 한 발은 전장을 바꿀 수 있어요."
                     : "동시 격파! 두 차량이 함께 쓰러졌습니다."}
             </p>
+            {result.assisted && <p>확장 조준 보조 사용</p>}
             <div className="result-stats">
               <div>
                 <span>남은 체력</span>
@@ -1045,6 +1125,26 @@ function App() {
               <small className="muted">
                 자유 전투의 새 대결부터 적용됩니다. 캠페인 난이도는 임무별로
                 고정됩니다.
+              </small>
+              <label className="setting-row">
+                조준 보조
+                <select
+                  aria-label="조준 보조"
+                  value={settings.aimGuide}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      aimGuide: e.target.value as AimGuideMode,
+                    })
+                  }
+                >
+                  <option value="default">난이도 기본값</option>
+                  <option value="off">조준 가이드 끄기</option>
+                  <option value="extended">확장 조준 가이드</option>
+                </select>
+              </label>
+              <small className="muted">
+                실제 전투 난이도 기준 · 즉시 적용 · 확장 사용은 경기 기록에 표시
               </small>
               <label className="setting-row">
                 자동 EMP 방어
@@ -1197,7 +1297,7 @@ function App() {
                       </b>
                       <span>
                         {difficultyNames[r.difficulty]} · {r.shots}발 · 직접
-                        명중 {r.direct}회
+                        명중 {r.direct}회 {r.assisted && "· 확장 보조 사용"}
                         <small>
                           {new Date(r.date).toLocaleDateString("ko-KR")} · 피해{" "}
                           {r.damage} · {timeLabel(r.seconds)}

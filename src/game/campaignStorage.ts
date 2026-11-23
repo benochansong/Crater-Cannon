@@ -9,6 +9,7 @@ export interface CampaignProgress {
   completed: string[];
   unlocked: string[];
   grades: Record<string, Grade>;
+  assisted: string[];
   supplies: number;
   weapons: string[];
   transitionSeen: boolean;
@@ -20,6 +21,7 @@ export function freshProgress(): CampaignProgress {
     completed: [],
     unlocked: ["normandy"],
     grades: {},
+    assisted: [],
     supplies: 0,
     weapons: [],
     transitionSeen: false,
@@ -34,6 +36,9 @@ export function normalizeProgress(value: unknown): CampaignProgress {
     if (!Array.isArray(v.completed) || !v.completed.includes(m.id)) break;
     p.completed.push(m.id);
   }
+  p.assisted = p.completed.filter(
+    (id) => Array.isArray(v.assisted) && v.assisted.includes(id),
+  );
   p.unlocked = MISSIONS.slice(
     0,
     Math.min(MISSIONS.length, p.completed.length + 1),
@@ -127,6 +132,7 @@ export function completeMission(
   return normalizeProgress({
     ...p,
     current: id,
+    assisted: [...new Set([...p.assisted, ...(r.assisted ? [id] : [])])],
     completed: [...new Set([...p.completed, id])],
     grades: { ...p.grades, [id]: old && rank[old] > rank[grade] ? old : grade },
   });
